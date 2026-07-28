@@ -115,6 +115,43 @@ export async function fetchArticleComments(articleId: string): Promise<ArticleCo
     });
 }
 
+/** Add a comment to an article (its detail screen reads from article_comments). */
+export async function submitArticleComment(
+  articleId: string,
+  userId: string,
+  text: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('article_comments')
+    .insert({ article: articleId, creator: userId, text: text.trim(), delete: false });
+  if (error) throw error;
+}
+
+/** Whether the current user has already rated an article (rating is append-only). */
+export async function hasRatedArticle(articleId: string, userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('articles_rating')
+    .select('id')
+    .eq('article', articleId)
+    .eq('author', userId)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data !== null;
+}
+
+/** Rate an article once. Inserts into articles_rating; a trigger appends to articles.Rating. */
+export async function submitArticleRating(
+  articleId: string,
+  userId: string,
+  rating: number,
+): Promise<void> {
+  const { error } = await supabase
+    .from('articles_rating')
+    .insert({ article: articleId, author: userId, rating });
+  if (error) throw error;
+}
+
 /** Average of the `Rating` numeric array, or null when empty. */
 export function averageArticleRating(rating: ArticleListItem['Rating']): number | null {
   if (!Array.isArray(rating) || rating.length === 0) return null;

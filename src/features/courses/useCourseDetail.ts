@@ -21,6 +21,8 @@ type UseCourseDetailState = {
   error: string | null;
   /** Re-check access only (e.g. after returning from the web purchase flow). */
   refreshAccess: () => void;
+  /** Re-fetch course, lessons and access (e.g. after posting a rating/review). */
+  reload: () => void;
 };
 
 function isFreeCourse(course: CourseDetail): boolean {
@@ -36,6 +38,7 @@ export function useCourseDetail(slug: string | undefined): UseCourseDetailState 
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -74,7 +77,9 @@ export function useCourseDetail(slug: string | undefined): UseCourseDetailState 
     return () => {
       mounted = false;
     };
-  }, [slug, user]);
+  }, [slug, user, reloadKey]);
+
+  const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
   const refreshAccess = useCallback(() => {
     if (!course || !user) return;
@@ -85,5 +90,15 @@ export function useCourseDetail(slug: string | undefined): UseCourseDetailState 
       });
   }, [course, user]);
 
-  return { course, lessons, studentsCount, hasAccess, notFound, loading, error, refreshAccess };
+  return {
+    course,
+    lessons,
+    studentsCount,
+    hasAccess,
+    notFound,
+    loading,
+    error,
+    refreshAccess,
+    reload,
+  };
 }

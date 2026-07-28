@@ -3,23 +3,31 @@ import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
+import { RatingInput } from '@/components/RatingInput';
+import { useAuth } from '@/features/auth/AuthContext';
 import {
   accessFormatLabel,
   averageRating,
+  myCourseRating,
   parseReviews,
   ratingCount,
+  submitCourseRating,
+  submitCourseReview,
   type LessonItem,
 } from '@/features/courses/api';
 import { CourseReviews } from '@/features/courses/CourseReviews';
 import { useCourseDetail } from '@/features/courses/useCourseDetail';
 import { PeerTubePlayer } from '@/features/video/PeerTubePlayer';
+import { errorMessage } from '@/lib/errors';
 
 const WEB_ORIGIN = 'https://app.meetgu.ru';
 const priceFormatter = new Intl.NumberFormat('ru-RU');
@@ -30,11 +38,56 @@ function formatPrice(value: number | null): string {
 
 export default function CourseDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { course, lessons, studentsCount, hasAccess, notFound, loading, error, refreshAccess } =
-    useCourseDetail(slug);
+  const {
+    course,
+    lessons,
+    studentsCount,
+    hasAccess,
+    notFound,
+    loading,
+    error,
+    refreshAccess,
+    reload,
+  } = useCourseDetail(slug);
+  const { user } = useAuth();
 
   const scrollRef = useRef<ScrollView>(null);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [reviewText, setReviewText] = useState('');
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const handleRate = useCallback(
+    async (value: number) => {
+      if (!course || !user || submittingRating) return;
+      setSubmittingRating(true);
+      try {
+        await submitCourseRating(course.id, user.id, value);
+        reload();
+      } catch (e) {
+        Alert.alert('Ошибка', errorMessage(e, 'Не удалось сохранить оценку.'));
+      } finally {
+        setSubmittingRating(false);
+      }
+    },
+    [course, user, submittingRating, reload],
+  );
+
+  const handleReview = useCallback(async () => {
+    if (!course || !user || submittingReview) return;
+    const text = reviewText.trim();
+    if (!text) return;
+    setSubmittingReview(true);
+    try {
+      await submitCourseReview(course.id, user.id, text);
+      setReviewText('');
+      reload();
+    } catch (e) {
+      Alert.alert('Ошибка', errorMessage(e, 'Не удалось отправить отзыв.'));
+    } finally {
+      setSubmittingReview(false);
+    }
+  }, [course, user, reviewText, submittingReview, reload]);
 
   const isFree = course ? course.Free === true || (course.Price ?? 0) === 0 : false;
   const rating = course ? averageRating(course.rating) : null;
@@ -88,6 +141,7 @@ export default function CourseDetailScreen() {
   const reviews = parseReviews(course.comment);
   const ratingsTotal = ratingCount(course.rating);
   const materialsCount = lessons.filter((l) => (l.File ?? '').trim().length > 0).length;
+  const myRating = user ? myCourseRating(course.rating, user.id) : null;
 
   return (
     <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
@@ -179,6 +233,31 @@ export default function CourseDetailScreen() {
           })
         )}
       </Section>
+
+      {user ? (
+        <Section title="Ваша оценка">
+          <RatingInput value={myRating ?? 0} onChange={handleRate} disabled={submittingRating} />
+          <TextInput
+            style={styles.reviewInput}
+            value={reviewText}
+            onChangeText={setReviewText}
+            placeholder="Написать отзыв…"
+            placeholderTextColor="#9ca3af"
+            multiline
+          />
+          <Pressable
+            style={[styles.submitButton, (!reviewText.trim() || submittingReview) && styles.submitDisabled]}
+            onPress={handleReview}
+            disabled={!reviewText.trim() || submittingReview}
+          >
+            {submittingReview ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.submitText}>Отправить отзыв</Text>
+            )}
+          </Pressable>
+        </Section>
+      ) : null}
 
       {reviews.length > 0 ? (
         <Section title={`Отзывы · ${reviews.length}`}>
@@ -377,5 +456,32 @@ const styles = StyleSheet.create({
     color: '#dc2626',
     fontSize: 15,
     textAlign: 'center',
+  },
+  reviewInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#111827',
+    minHeight: 72,
+    textAlignVertical: 'top',
+    marginTop: 8,
+  },
+  submitButton: {
+    backgroundColor: '#2563eb',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  submitDisabled: {
+    opacity: 0.5,
+  },
+  submitText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

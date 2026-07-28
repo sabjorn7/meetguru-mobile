@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   fetchArticleAuthor,
@@ -16,6 +16,7 @@ type UseArticleDetailState = {
   notFound: boolean;
   loading: boolean;
   error: string | null;
+  reload: () => void;
 };
 
 export function useArticleDetail(slug: string | undefined): UseArticleDetailState {
@@ -25,6 +26,7 @@ export function useArticleDetail(slug: string | undefined): UseArticleDetailStat
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -61,7 +63,9 @@ export function useArticleDetail(slug: string | undefined): UseArticleDetailStat
     return () => {
       mounted = false;
     };
-  }, [slug]);
+  }, [slug, reloadKey]);
 
-  return { article, author, comments, notFound, loading, error };
+  const reload = useCallback(() => setReloadKey((k) => k + 1), []);
+
+  return { article, author, comments, notFound, loading, error, reload };
 }

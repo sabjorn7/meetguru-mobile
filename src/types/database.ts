@@ -279,6 +279,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      articles_rating: {
+        Row: {
+          id: string;
+          created_at: string;
+          rating: number | null;
+          article: string | null;
+          author: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          rating?: number | null;
+          article?: string | null;
+          author?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          rating?: number | null;
+          article?: string | null;
+          author?: string | null;
+        };
+        Relationships: [];
+      };
       article_comments: {
         Row: {
           id: string;

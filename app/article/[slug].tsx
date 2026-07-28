@@ -1,19 +1,31 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   useWindowDimensions,
   View,
 } from 'react-native';
 import RenderHtml from 'react-native-render-html';
 
-import { averageArticleRating } from '@/features/articles/api';
+import { RatingInput } from '@/components/RatingInput';
+import { useAuth } from '@/features/auth/AuthContext';
+import {
+  averageArticleRating,
+  hasRatedArticle,
+  submitArticleComment,
+  submitArticleRating,
+} from '@/features/articles/api';
 import { ArticleComments } from '@/features/articles/ArticleComments';
 import { useArticleDetail } from '@/features/articles/useArticleDetail';
 import { PeerTubePlayer } from '@/features/video/PeerTubePlayer';
+import { errorMessage } from '@/lib/errors';
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
   day: 'numeric',
@@ -44,8 +56,63 @@ const htmlTagStyles = {
 
 export default function ArticleDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { article, author, comments, notFound, loading, error } = useArticleDetail(slug);
+  const { article, author, comments, notFound, loading, error, reload } = useArticleDetail(slug);
+  const { user } = useAuth();
   const { width } = useWindowDimensions();
+
+  const [rated, setRated] = useState(false);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
+
+  const articleId = article?.id;
+
+  // Whether the user has already rated (article rating is one-time).
+  useEffect(() => {
+    let mounted = true;
+    if (!articleId || !user) return;
+    hasRatedArticle(articleId, user.id)
+      .then((has) => mounted && setRated(has))
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [articleId, user]);
+
+  const handleRate = useCallback(
+    async (value: number) => {
+      if (!articleId || !user || submittingRating || rated) return;
+      setRatingValue(value);
+      setSubmittingRating(true);
+      try {
+        await submitArticleRating(articleId, user.id, value);
+        setRated(true);
+        reload();
+      } catch (e) {
+        Alert.alert('Ошибка', errorMessage(e, 'Не удалось сохранить оценку.'));
+      } finally {
+        setSubmittingRating(false);
+      }
+    },
+    [articleId, user, submittingRating, rated, reload],
+  );
+
+  const handleComment = useCallback(async () => {
+    if (!articleId || !user || submittingComment) return;
+    const text = commentText.trim();
+    if (!text) return;
+    setSubmittingComment(true);
+    try {
+      await submitArticleComment(articleId, user.id, text);
+      setCommentText('');
+      reload();
+    } catch (e) {
+      Alert.alert('Ошибка', errorMessage(e, 'Не удалось отправить комментарий.'));
+    } finally {
+      setSubmittingComment(false);
+    }
+  }, [articleId, user, commentText, submittingComment, reload]);
 
   if (loading) {
     return (
@@ -121,12 +188,50 @@ export default function ArticleDetailScreen() {
         />
       </View>
 
-      {comments.length > 0 ? (
+      {user ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Комментарии · {comments.length}</Text>
-          <ArticleComments comments={comments} />
+          <Text style={styles.sectionTitle}>Ваша оценка</Text>
+          {rated ? (
+            <Text style={styles.muted}>Спасибо, вы оценили статью</Text>
+          ) : (
+            <RatingInput value={ratingValue} onChange={handleRate} disabled={submittingRating} />
+          )}
         </View>
       ) : null}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>
+          Комментарии{comments.length ? ` · ${comments.length}` : ''}
+        </Text>
+        {comments.length > 0 ? <ArticleComments comments={comments} /> : null}
+
+        {user ? (
+          <>
+            <TextInput
+              style={styles.commentInput}
+              value={commentText}
+              onChangeText={setCommentText}
+              placeholder="Написать комментарий…"
+              placeholderTextColor="#9ca3af"
+              multiline
+            />
+            <Pressable
+              style={[
+                styles.submitButton,
+                (!commentText.trim() || submittingComment) && styles.submitDisabled,
+              ]}
+              onPress={handleComment}
+              disabled={!commentText.trim() || submittingComment}
+            >
+              {submittingComment ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.submitText}>Отправить</Text>
+              )}
+            </Pressable>
+          </>
+        ) : null}
+      </View>
     </ScrollView>
   );
 }
@@ -217,5 +322,32 @@ const styles = StyleSheet.create({
     color: '#dc2626',
     fontSize: 15,
     textAlign: 'center',
+  },
+  commentInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#111827',
+    minHeight: 72,
+    textAlignVertical: 'top',
+    marginTop: 12,
+  },
+  submitButton: {
+    backgroundColor: '#2563eb',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  submitDisabled: {
+    opacity: 0.5,
+  },
+  submitText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { Tables } from '@/types/database';
+import type { Json, Tables } from '@/types/database';
 
 /** Columns the catalog list needs — mirrors the website's course query. */
 const LIST_COLUMNS =
@@ -172,6 +172,71 @@ export async function fetchCoursesByIds(ids: string[]): Promise<CourseListItem[]
 
   const byId = new Map((data ?? []).map((c) => [c.id, c]));
   return ids.map((id) => byId.get(id)).filter((c): c is CourseListItem => c != null);
+}
+
+/** The current user's own rating for a course, or null if they haven't rated. */
+export function myCourseRating(
+  rating: CourseListItem['rating'],
+  userId: string,
+): number | null {
+  if (!Array.isArray(rating)) return null;
+  const mine = (rating as RatingEntry[]).find((e) => e?.user_id === userId);
+  return typeof mine?.rating === 'number' ? mine.rating : null;
+}
+
+/** Add or replace the current user's rating for a course (read-modify-write jsonb). */
+export async function submitCourseRating(
+  courseId: string,
+  userId: string,
+  rating: number,
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('course')
+    .select('rating')
+    .eq('id', courseId)
+    .single();
+  if (error) throw error;
+
+  const current = Array.isArray(data.rating) ? (data.rating as RatingEntry[]) : [];
+  const next = current.filter((e) => e?.user_id !== userId);
+  next.push({ rating, user_id: userId, date: new Date().toISOString() });
+
+  const { error: updateError } = await supabase
+    .from('course')
+    .update({ rating: next })
+    .eq('id', courseId);
+  if (updateError) throw updateError;
+}
+
+/** Append the current user's review to a course (read-modify-write jsonb). */
+export async function submitCourseReview(
+  courseId: string,
+  userId: string,
+  text: string,
+): Promise<void> {
+  const [{ data, error }, { data: author }] = await Promise.all([
+    supabase.from('course').select('comment').eq('id', courseId).single(),
+    supabase.from('users').select('Name,Photo').eq('id', userId).maybeSingle(),
+  ]);
+  if (error) throw error;
+
+  const current = Array.isArray(data.comment) ? (data.comment as Json[]) : [];
+  const next: Json[] = [
+    ...current,
+    {
+      user_id: userId,
+      name: author?.Name ?? null,
+      photo: author?.Photo ?? null,
+      comment: text.trim(),
+      date: new Date().toISOString(),
+    },
+  ];
+
+  const { error: updateError } = await supabase
+    .from('course')
+    .update({ comment: next })
+    .eq('id', courseId);
+  if (updateError) throw updateError;
 }
 
 /** Average of the `rating` jsonb array, or null when there are no ratings. */
