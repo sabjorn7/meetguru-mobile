@@ -159,6 +159,78 @@ export type Database = {
         };
         Relationships: [];
       };
+      chats: {
+        Row: {
+          id: string;
+          created_at: string;
+          users: string[] | null;
+          messages: string[] | null;
+          read: string[] | null;
+          user_1: string | null;
+          user_2: string | null;
+          mod_date: string | null;
+          sort_date: string | null;
+          title: string | null;
+          is_group: boolean | null;
+          creator: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          users?: string[] | null;
+          messages?: string[] | null;
+          read?: string[] | null;
+          user_1?: string | null;
+          user_2?: string | null;
+          mod_date?: string | null;
+          sort_date?: string | null;
+          title?: string | null;
+          is_group?: boolean | null;
+          creator?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          users?: string[] | null;
+          messages?: string[] | null;
+          read?: string[] | null;
+          user_1?: string | null;
+          user_2?: string | null;
+          mod_date?: string | null;
+          sort_date?: string | null;
+          title?: string | null;
+          is_group?: boolean | null;
+          creator?: string | null;
+        };
+        Relationships: [];
+      };
+      messages: {
+        Row: {
+          id: string;
+          created_at: string;
+          creator: string | null;
+          text: string | null;
+          chat: string | null;
+          user_2: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          creator?: string | null;
+          text?: string | null;
+          chat?: string | null;
+          user_2?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          creator?: string | null;
+          text?: string | null;
+          chat?: string | null;
+          user_2?: string | null;
+        };
+        Relationships: [];
+      };
       articles: {
         Row: {
           id: string;
@@ -323,7 +395,12 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      add_user_to_chat_read: {
+        Args: { p_chat_id: string; p_user_id: string };
+        Returns: undefined;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

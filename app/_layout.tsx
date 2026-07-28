@@ -38,6 +38,7 @@ function AuthGate() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="course/[slug]" options={{ headerShown: true, title: 'Курс' }} />
       <Stack.Screen name="article/[slug]" options={{ headerShown: true, title: 'Статья' }} />
+      <Stack.Screen name="chat/[id]" options={{ headerShown: true, title: 'Диалог' }} />
       <Stack.Screen
         name="profile/edit"
         options={{ headerShown: true, title: 'Редактирование', presentation: 'modal' }}
