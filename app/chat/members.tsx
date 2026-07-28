@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
 
 import { fetchChatMembers, type ChatMember } from '@/features/chats/api';
+import { roleLabel } from '@/features/profile/api';
 import { errorMessage } from '@/lib/errors';
 
 export default function ChatMembersScreen() {
@@ -53,7 +54,7 @@ export default function ChatMembersScreen() {
             <View style={styles.body}>
               <Text style={styles.name}>{item.name || 'Без имени'}</Text>
               <Text style={styles.sub} numberOfLines={1}>
-                {item.role ? `${item.role} · ` : ''}
+                {item.role ? `${roleLabel(item.role)} · ` : ''}
                 {item.email}
               </Text>
             </View>

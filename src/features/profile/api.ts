@@ -6,6 +6,11 @@ import type { Tables } from '@/types/database';
 
 const AVATAR_BUCKET = 'profile';
 
+/** Public web URL of a user's profile (for sharing), mirrors the site route. */
+export function publicProfileUrl(userId: string): string {
+  return `https://app.meetgu.ru/profile_page?user=${userId}`;
+}
+
 /** Profile fields shown/edited on the profile screen. */
 export type Profile = Pick<
   Tables<'users'>,
@@ -39,6 +44,41 @@ export type ProfilePatch = Pick<
   | 'website_url'
   | 'booking_url'
 >;
+
+/** A profile in the public people directory. */
+export type ProfileListItem = {
+  id: string;
+  name: string | null;
+  photo: string | null;
+  role: string | null;
+  description: string | null;
+};
+
+/** Display label for a role. The site shows the "Ученик" role as "Специалист". */
+export function roleLabel(role: string | null): string | null {
+  if (!role) return null;
+  return role === 'Ученик' ? 'Специалист' : role;
+}
+
+/**
+ * Public people directory — all users, ordered by name. Matches the web `users`
+ * page (which lists everyone; the "Ученик" role is just displayed as "Специалист").
+ */
+export async function fetchProfiles(): Promise<ProfileListItem[]> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id,Name,Photo,role,Description')
+    .order('Name', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []).map((u) => ({
+    id: u.id,
+    name: u.Name,
+    photo: u.Photo,
+    role: roleLabel(u.role),
+    description: u.Description,
+  }));
+}
 
 /** Fetch the current user's profile row (users.id === auth uid). */
 export async function fetchProfile(userId: string): Promise<Profile | null> {

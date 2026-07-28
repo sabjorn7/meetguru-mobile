@@ -35,6 +35,10 @@ export default function TabsLayout() {
         options={{ title: 'Статьи', tabBarIcon: tabIcon('newspaper', 'newspaper-outline') }}
       />
       <Tabs.Screen
+        name="people"
+        options={{ title: 'Люди', tabBarIcon: tabIcon('people', 'people-outline') }}
+      />
+      <Tabs.Screen
         name="chats"
         options={{
           title: 'Чаты',

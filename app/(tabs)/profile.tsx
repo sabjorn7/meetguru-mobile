@@ -15,7 +15,7 @@ import {
 import { useAuth } from '@/features/auth/AuthContext';
 import type { CourseListItem } from '@/features/courses/api';
 import { CourseCard } from '@/features/courses/CourseCard';
-import type { Profile } from '@/features/profile/api';
+import { roleLabel, type Profile } from '@/features/profile/api';
 import { useProfile } from '@/features/profile/useProfile';
 
 const SOCIAL_FIELDS: { key: keyof Profile; label: string }[] = [
@@ -89,7 +89,7 @@ export default function ProfileScreen() {
           </View>
         )}
         <Text style={styles.name}>{displayName}</Text>
-        {profile?.role ? <Text style={styles.role}>{profile.role}</Text> : null}
+        {profile?.role ? <Text style={styles.role}>{roleLabel(profile.role)}</Text> : null}
         <Text style={styles.email}>{profile?.email ?? user?.email ?? ''}</Text>
       </View>
 
