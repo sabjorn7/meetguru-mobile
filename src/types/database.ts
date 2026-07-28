@@ -111,6 +111,84 @@ export type Database = {
         };
         Relationships: [];
       };
+      lessons: {
+        Row: {
+          id: string;
+          created_at: string;
+          File: string | null;
+          Title: string | null;
+          Descr: string | null;
+          Course: string | null;
+          Video: string | null;
+          video_id: string | null;
+          resume_video_id: string | null;
+          resume_chunk: string | null;
+          resume_name: string | null;
+          video_size: string | null;
+          ban_list: string[] | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          File?: string | null;
+          Title?: string | null;
+          Descr?: string | null;
+          Course?: string | null;
+          Video?: string | null;
+          video_id?: string | null;
+          resume_video_id?: string | null;
+          resume_chunk?: string | null;
+          resume_name?: string | null;
+          video_size?: string | null;
+          ban_list?: string[] | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          File?: string | null;
+          Title?: string | null;
+          Descr?: string | null;
+          Course?: string | null;
+          Video?: string | null;
+          video_id?: string | null;
+          resume_video_id?: string | null;
+          resume_chunk?: string | null;
+          resume_name?: string | null;
+          video_size?: string | null;
+          ban_list?: string[] | null;
+        };
+        Relationships: [];
+      };
+      user_course: {
+        Row: {
+          id: string;
+          created_at: string;
+          course: string | null;
+          user: string | null;
+          Free: boolean | null;
+          end_period: string | null;
+          buy: boolean | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          course?: string | null;
+          user?: string | null;
+          Free?: boolean | null;
+          end_period?: string | null;
+          buy?: boolean | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          course?: string | null;
+          user?: string | null;
+          Free?: boolean | null;
+          end_period?: string | null;
+          buy?: boolean | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

@@ -39,6 +39,78 @@ export async function fetchCourses(): Promise<CourseListItem[]> {
   return data ?? [];
 }
 
+/** Full course row for the detail screen. */
+export type CourseDetail = Pick<
+  Tables<'course'>,
+  | 'id'
+  | 'Title'
+  | 'Decription'
+  | 'WhatTeach'
+  | 'For'
+  | 'slug'
+  | 'video_id'
+  | 'Price'
+  | 'old_price'
+  | 'Free'
+  | 'Category'
+  | 'rating'
+>;
+
+const DETAIL_COLUMNS =
+  'id,Title,Decription,WhatTeach,For,slug,video_id,Price,old_price,Free,Category,rating' as const;
+
+/** One lesson in a course. */
+export type LessonItem = Pick<Tables<'lessons'>, 'id' | 'Title' | 'Descr' | 'video_id'>;
+
+/** Fetch a single published course by its slug, or null if not found. */
+export async function fetchCourseBySlug(slug: string): Promise<CourseDetail | null> {
+  const { data, error } = await supabase
+    .from('course')
+    .select(DETAIL_COLUMNS)
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+/** Fetch a course's lessons in display order (mirrors get_course_data ordering). */
+export async function fetchCourseLessons(courseId: string): Promise<LessonItem[]> {
+  const { data, error } = await supabase
+    .from('lessons')
+    .select('id,Title,Descr,video_id')
+    .eq('Course', courseId)
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * Whether the current user has access to a course. Mirrors the web app: access
+ * is granted by the presence of a `user_course` row for (user, course). Free
+ * courses are treated as accessible even without a row.
+ */
+export async function checkCourseAccess(
+  courseId: string,
+  userId: string,
+  isFree: boolean,
+): Promise<boolean> {
+  if (isFree) return true;
+
+  const { data, error } = await supabase
+    .from('user_course')
+    .select('id')
+    .eq('course', courseId)
+    .eq('user', userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data !== null;
+}
+
 /** Average of the `rating` jsonb array, or null when there are no ratings. */
 export function averageRating(rating: CourseListItem['rating']): number | null {
   if (!Array.isArray(rating) || rating.length === 0) return null;
