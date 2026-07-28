@@ -22,6 +22,7 @@ import {
   uploadAvatar,
   type ProfilePatch,
 } from '@/features/profile/api';
+import { errorMessage } from '@/lib/errors';
 
 type FormState = {
   Name: string;
@@ -63,8 +64,12 @@ function orNull(value: string): string | null {
 }
 
 export default function EditProfileScreen() {
-  const { user } = useAuth();
+  const { user, updatePassword } = useAuth();
   const router = useRouter();
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -150,9 +155,32 @@ export default function EditProfileScreen() {
       await updateProfile(user.id, patch);
       router.back();
     } catch (e) {
-      Alert.alert('Ошибка', e instanceof Error ? e.message : 'Не удалось сохранить профиль.');
+      Alert.alert('Ошибка', errorMessage(e, 'Не удалось сохранить профиль.'));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleChangePassword() {
+    if (changingPassword) return;
+    if (newPassword.length < 6) {
+      Alert.alert('Пароль слишком короткий', 'Минимум 6 символов.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Пароли не совпадают', 'Повторите новый пароль без ошибок.');
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      await updatePassword(newPassword);
+      setNewPassword('');
+      setConfirmPassword('');
+      Alert.alert('Готово', 'Пароль изменён.');
+    } catch (e) {
+      Alert.alert('Ошибка', errorMessage(e, 'Не удалось изменить пароль.'));
+    } finally {
+      setChangingPassword(false);
     }
   }
 
@@ -218,6 +246,44 @@ export default function EditProfileScreen() {
             <Text style={styles.saveText}>Сохранить</Text>
           )}
         </Pressable>
+
+        <View style={styles.passwordSection}>
+          <Text style={styles.sectionTitle}>Смена пароля</Text>
+          <TextInput
+            style={styles.input}
+            value={newPassword}
+            onChangeText={setNewPassword}
+            placeholder="Новый пароль (мин. 6 символов)"
+            placeholderTextColor="#9ca3af"
+            secureTextEntry
+            autoCapitalize="none"
+            textContentType="newPassword"
+          />
+          <TextInput
+            style={styles.input}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Повторите новый пароль"
+            placeholderTextColor="#9ca3af"
+            secureTextEntry
+            autoCapitalize="none"
+            textContentType="newPassword"
+          />
+          <Pressable
+            style={[
+              styles.passwordButton,
+              (!newPassword || !confirmPassword || changingPassword) && styles.disabled,
+            ]}
+            onPress={handleChangePassword}
+            disabled={!newPassword || !confirmPassword || changingPassword}
+          >
+            {changingPassword ? (
+              <ActivityIndicator color="#2563eb" />
+            ) : (
+              <Text style={styles.passwordButtonText}>Изменить пароль</Text>
+            )}
+          </Pressable>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -295,6 +361,30 @@ const styles = StyleSheet.create({
   saveText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  passwordSection: {
+    gap: 10,
+    marginTop: 12,
+    paddingTop: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e5e7eb',
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  passwordButton: {
+    borderWidth: 1,
+    borderColor: '#2563eb',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  passwordButtonText: {
+    color: '#2563eb',
+    fontSize: 15,
     fontWeight: '600',
   },
 });

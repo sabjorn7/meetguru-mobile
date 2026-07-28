@@ -27,6 +27,8 @@ type AuthContextValue = {
     password: string,
     role: string,
   ) => Promise<{ needsConfirmation: boolean }>;
+  /** Change the signed-in user's password. */
+  updatePassword: (newPassword: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -78,6 +80,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (error) throw error;
         return { needsConfirmation: data.session === null };
+      },
+      async updatePassword(newPassword) {
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) throw error;
       },
       async signOut() {
         const { error } = await supabase.auth.signOut();

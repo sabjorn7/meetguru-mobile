@@ -1,7 +1,9 @@
 import { Link } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -35,6 +37,18 @@ export default function LoginScreen() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Password recovery runs on the website (custom Unisender flow); open it there.
+  function handleForgotPassword() {
+    Alert.alert(
+      'Восстановление пароля',
+      'Откроется сайт MeetGuru. Там нажмите «Забыли пароль?», введите email и следуйте ссылке из письма.',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        { text: 'Открыть сайт', onPress: () => WebBrowser.openBrowserAsync('https://app.meetgu.ru/login') },
+      ],
+    );
   }
 
   return (
@@ -73,6 +87,10 @@ export default function LoginScreen() {
             returnKeyType="go"
           />
 
+          <Pressable onPress={handleForgotPassword} hitSlop={8} style={styles.forgot}>
+            <Text style={styles.forgotText}>Забыли пароль?</Text>
+          </Pressable>
+
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <Pressable
@@ -106,6 +124,15 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+  forgot: {
+    alignSelf: 'flex-end',
+    marginTop: -4,
+  },
+  forgotText: {
+    fontSize: 13,
+    color: '#2563eb',
+    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',
