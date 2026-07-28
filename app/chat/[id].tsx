@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useConversation, type DisplayMessage } from '@/features/chats/useConversation';
+import { setActiveChat } from '@/features/notifications/activeChat';
 
 const timeFormatter = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
@@ -55,6 +56,14 @@ export default function ChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState('');
+
+  // Mark this chat active so incoming pushes for it are suppressed while open.
+  useFocusEffect(
+    useCallback(() => {
+      setActiveChat(id ?? null);
+      return () => setActiveChat(null);
+    }, [id]),
+  );
 
   // Inverted list renders newest at the bottom and pins to it automatically.
   const inverted = useMemo(() => [...messages].reverse(), [messages]);
