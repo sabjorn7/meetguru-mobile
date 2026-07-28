@@ -68,6 +68,7 @@ export async function fetchProfiles(): Promise<ProfileListItem[]> {
   const { data, error } = await supabase
     .from('users')
     .select('id,Name,Photo,role,Description')
+    .neq('role', 'admin')
     .order('Name', { ascending: true });
 
   if (error) throw error;
