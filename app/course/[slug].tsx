@@ -10,7 +10,14 @@ import {
   View,
 } from 'react-native';
 
-import { averageRating, type LessonItem } from '@/features/courses/api';
+import {
+  accessFormatLabel,
+  averageRating,
+  parseReviews,
+  ratingCount,
+  type LessonItem,
+} from '@/features/courses/api';
+import { CourseReviews } from '@/features/courses/CourseReviews';
 import { useCourseDetail } from '@/features/courses/useCourseDetail';
 import { PeerTubePlayer } from '@/features/video/PeerTubePlayer';
 
@@ -23,7 +30,7 @@ function formatPrice(value: number | null): string {
 
 export default function CourseDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { course, lessons, hasAccess, notFound, loading, error, refreshAccess } =
+  const { course, lessons, studentsCount, hasAccess, notFound, loading, error, refreshAccess } =
     useCourseDetail(slug);
 
   const scrollRef = useRef<ScrollView>(null);
@@ -78,6 +85,10 @@ export default function CourseDetailScreen() {
     );
   }
 
+  const reviews = parseReviews(course.comment);
+  const ratingsTotal = ratingCount(course.rating);
+  const materialsCount = lessons.filter((l) => (l.File ?? '').trim().length > 0).length;
+
   return (
     <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: course.Title ?? 'Курс' }} />
@@ -99,7 +110,22 @@ export default function CourseDetailScreen() {
               ) : null}
             </View>
           )}
-          {rating !== null ? <Text style={styles.rating}>★ {rating.toFixed(1)}</Text> : null}
+          {rating !== null ? (
+            <Text style={styles.rating}>
+              ★ {rating.toFixed(1)}
+              {ratingsTotal > 0 ? <Text style={styles.ratingCount}> · {ratingsTotal}</Text> : null}
+            </Text>
+          ) : null}
+        </View>
+
+        <View style={styles.statsRow}>
+          <Stat value={lessons.length} label={pluralLessons(lessons.length)} />
+          <Stat value={materialsCount} label={pluralMaterials(materialsCount)} />
+          <Stat value={studentsCount} label={pluralStudents(studentsCount)} />
+        </View>
+
+        <View style={styles.accessChip}>
+          <Text style={styles.accessChipText}>{accessFormatLabel(course.DurationLong)}</Text>
         </View>
 
         {!hasAccess && !isFree ? (
@@ -153,9 +179,37 @@ export default function CourseDetailScreen() {
           })
         )}
       </Section>
+
+      {reviews.length > 0 ? (
+        <Section title={`Отзывы · ${reviews.length}`}>
+          <CourseReviews reviews={reviews} />
+        </Section>
+      ) : null}
     </ScrollView>
   );
 }
+
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+/** Russian plural helper: [one, few, many]. */
+function plural(n: number, forms: [string, string, string]): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return forms[0];
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return forms[1];
+  return forms[2];
+}
+
+const pluralLessons = (n: number) => plural(n, ['урок', 'урока', 'уроков']);
+const pluralMaterials = (n: number) => plural(n, ['материал', 'материала', 'материалов']);
+const pluralStudents = (n: number) => plural(n, ['ученик', 'ученика', 'учеников']);
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -233,6 +287,46 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#f59e0b',
+  },
+  ratingCount: {
+    fontWeight: '400',
+    color: '#9ca3af',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#eceef1',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  stat: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 2,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  accessChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginTop: 10,
+  },
+  accessChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#475569',
   },
   buyButton: {
     backgroundColor: '#2563eb',

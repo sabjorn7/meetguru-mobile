@@ -6,6 +6,7 @@ import {
   checkCourseAccess,
   fetchCourseBySlug,
   fetchCourseLessons,
+  fetchStudentsCount,
   type CourseDetail,
   type LessonItem,
 } from './api';
@@ -13,6 +14,7 @@ import {
 type UseCourseDetailState = {
   course: CourseDetail | null;
   lessons: LessonItem[];
+  studentsCount: number;
   hasAccess: boolean;
   notFound: boolean;
   loading: boolean;
@@ -29,6 +31,7 @@ export function useCourseDetail(slug: string | undefined): UseCourseDetailState 
   const { user } = useAuth();
   const [course, setCourse] = useState<CourseDetail | null>(null);
   const [lessons, setLessons] = useState<LessonItem[]>([]);
+  const [studentsCount, setStudentsCount] = useState(0);
   const [hasAccess, setHasAccess] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -52,12 +55,14 @@ export function useCourseDetail(slug: string | undefined): UseCourseDetailState 
         }
         setCourse(detail);
 
-        const [courseLessons, access] = await Promise.all([
+        const [courseLessons, students, access] = await Promise.all([
           fetchCourseLessons(detail.id),
+          fetchStudentsCount(detail.id),
           user ? checkCourseAccess(detail.id, user.id, isFreeCourse(detail)) : Promise.resolve(false),
         ]);
         if (!mounted) return;
         setLessons(courseLessons);
+        setStudentsCount(students);
         setHasAccess(access);
       } catch (e) {
         if (mounted) setError(e instanceof Error ? e.message : 'Не удалось загрузить курс.');
@@ -80,5 +85,5 @@ export function useCourseDetail(slug: string | undefined): UseCourseDetailState 
       });
   }, [course, user]);
 
-  return { course, lessons, hasAccess, notFound, loading, error, refreshAccess };
+  return { course, lessons, studentsCount, hasAccess, notFound, loading, error, refreshAccess };
 }

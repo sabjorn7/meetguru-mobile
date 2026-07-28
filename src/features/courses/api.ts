@@ -54,13 +54,24 @@ export type CourseDetail = Pick<
   | 'Free'
   | 'Category'
   | 'rating'
+  | 'comment'
+  | 'DurationLong'
 >;
 
 const DETAIL_COLUMNS =
-  'id,Title,Decription,WhatTeach,For,slug,video_id,Price,old_price,Free,Category,rating' as const;
+  'id,Title,Decription,WhatTeach,For,slug,video_id,Price,old_price,Free,Category,rating,comment,DurationLong' as const;
 
-/** One lesson in a course. */
-export type LessonItem = Pick<Tables<'lessons'>, 'id' | 'Title' | 'Descr' | 'video_id'>;
+/** One lesson in a course. `File` is a single downloadable material URL, if any. */
+export type LessonItem = Pick<Tables<'lessons'>, 'id' | 'Title' | 'Descr' | 'video_id' | 'File'>;
+
+/** A user review from the `course.comment` jsonb array. */
+export type CourseReview = {
+  user_id: string;
+  name: string | null;
+  photo: string | null;
+  comment: string;
+  date: string | null;
+};
 
 /** Fetch a single published course by its slug, or null if not found. */
 export async function fetchCourseBySlug(slug: string): Promise<CourseDetail | null> {
@@ -78,7 +89,7 @@ export async function fetchCourseBySlug(slug: string): Promise<CourseDetail | nu
 export async function fetchCourseLessons(courseId: string): Promise<LessonItem[]> {
   const { data, error } = await supabase
     .from('lessons')
-    .select('id,Title,Descr,video_id')
+    .select('id,Title,Descr,video_id,File')
     .eq('Course', courseId)
     .order('created_at', { ascending: true })
     .order('id', { ascending: true });
@@ -109,6 +120,47 @@ export async function checkCourseAccess(
 
   if (error) throw error;
   return data !== null;
+}
+
+/** Number of enrolled students (rows in user_course for the course). */
+export async function fetchStudentsCount(courseId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('user_course')
+    .select('id', { count: 'exact', head: true })
+    .eq('course', courseId);
+
+  if (error) throw error;
+  return count ?? 0;
+}
+
+/** Parse the `course.comment` jsonb array into typed reviews (newest first). */
+export function parseReviews(comment: CourseDetail['comment']): CourseReview[] {
+  if (!Array.isArray(comment)) return [];
+  return (comment as Record<string, unknown>[])
+    .filter((entry) => typeof entry?.comment === 'string' && entry.comment.trim().length > 0)
+    .map((entry) => ({
+      user_id: String(entry.user_id ?? ''),
+      name: typeof entry.name === 'string' ? entry.name : null,
+      photo: typeof entry.photo === 'string' ? entry.photo : null,
+      comment: String(entry.comment),
+      date: typeof entry.date === 'string' ? entry.date : null,
+    }))
+    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
+}
+
+/** Count of ratings in the `rating` jsonb array. */
+export function ratingCount(rating: CourseDetail['rating']): number {
+  return Array.isArray(rating) ? rating.length : 0;
+}
+
+/**
+ * Human-readable access format. Mirrors the web app: DurationLong is the access
+ * length in months; 0 means unlimited.
+ */
+export function accessFormatLabel(durationLong: number | null): string {
+  return durationLong && durationLong > 0
+    ? `Доступ на ${durationLong} мес.`
+    : 'Доступ без ограничения по времени';
 }
 
 /** Average of the `rating` jsonb array, or null when there are no ratings. */
