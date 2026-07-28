@@ -159,6 +159,87 @@ export type Database = {
         };
         Relationships: [];
       };
+      articles: {
+        Row: {
+          id: string;
+          created_at: string;
+          Title: string | null;
+          Content: string | null;
+          Image: string | null;
+          Publish_date: string | null;
+          Status: string | null;
+          Category: string | null;
+          Rating: number[] | null;
+          Comments: string[] | null;
+          Creator: string | null;
+          video_id: string | null;
+          slug: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          Title?: string | null;
+          Content?: string | null;
+          Image?: string | null;
+          Publish_date?: string | null;
+          Status?: string | null;
+          Category?: string | null;
+          Rating?: number[] | null;
+          Comments?: string[] | null;
+          Creator?: string | null;
+          video_id?: string | null;
+          slug?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          Title?: string | null;
+          Content?: string | null;
+          Image?: string | null;
+          Publish_date?: string | null;
+          Status?: string | null;
+          Category?: string | null;
+          Rating?: number[] | null;
+          Comments?: string[] | null;
+          Creator?: string | null;
+          video_id?: string | null;
+          slug?: string | null;
+        };
+        Relationships: [];
+      };
+      article_comments: {
+        Row: {
+          id: string;
+          created_at: string;
+          text: string | null;
+          creator: string | null;
+          delete: boolean | null;
+          Reply_to: string | null;
+          article: string | null;
+          replies: string[] | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          text?: string | null;
+          creator?: string | null;
+          delete?: boolean | null;
+          Reply_to?: string | null;
+          article?: string | null;
+          replies?: string[] | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          text?: string | null;
+          creator?: string | null;
+          delete?: boolean | null;
+          Reply_to?: string | null;
+          article?: string | null;
+          replies?: string[] | null;
+        };
+        Relationships: [];
+      };
       users: {
         Row: {
           id: string;
