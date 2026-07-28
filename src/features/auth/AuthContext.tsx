@@ -16,6 +16,17 @@ type AuthContextValue = {
   /** True until the initial session lookup finishes — used to gate the redirect guard. */
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  /**
+   * Register with email/password. `role` is the stored role value
+   * (e.g. 'Ученик' | 'Спикер' | 'Учебное заведение') — passed as the `nickname`
+   * metadata that the DB trigger copies into users.role. Returns whether email
+   * confirmation is required (no session was issued).
+   */
+  signUp: (
+    email: string,
+    password: string,
+    role: string,
+  ) => Promise<{ needsConfirmation: boolean }>;
   signOut: () => Promise<void>;
 };
 
@@ -58,6 +69,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password,
         });
         if (error) throw error;
+      },
+      async signUp(email, password, role) {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { data: { nickname: role } },
+        });
+        if (error) throw error;
+        return { needsConfirmation: data.session === null };
       },
       async signOut() {
         const { error } = await supabase.auth.signOut();
