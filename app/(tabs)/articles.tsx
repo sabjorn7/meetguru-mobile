@@ -10,6 +10,8 @@ import {
   View,
 } from 'react-native';
 
+import { CatalogFilter } from '@/components/CatalogFilter';
+import { useCatalogFilter } from '@/components/useCatalogFilter';
 import type { ArticleListItem } from '@/features/articles/api';
 import { ArticleCard } from '@/features/articles/ArticleCard';
 import { useArticles } from '@/features/articles/useArticles';
@@ -17,6 +19,13 @@ import { useArticles } from '@/features/articles/useArticles';
 export default function ArticlesScreen() {
   const { articles, loading, refreshing, error, refresh } = useArticles();
   const router = useRouter();
+
+  const { query, setQuery, selectedCategory, setSelectedCategory, categories, filtered } =
+    useCatalogFilter({
+      items: articles,
+      getTitle: (a) => a.Title,
+      getCategory: (a) => a.Category,
+    });
 
   const openArticle = useCallback(
     (article: ArticleListItem) => {
@@ -46,11 +55,22 @@ export default function ArticlesScreen() {
 
   return (
     <FlatList
-      data={articles}
+      data={filtered}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <ArticleCard article={item} onPress={openArticle} />}
       contentContainerStyle={styles.list}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
+      keyboardShouldPersistTaps="handled"
+      ListHeaderComponent={
+        <CatalogFilter
+          query={query}
+          onQuery={setQuery}
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          placeholder="Поиск статей"
+        />
+      }
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       ListEmptyComponent={
         <View style={styles.centered}>

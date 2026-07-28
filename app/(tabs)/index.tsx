@@ -10,6 +10,8 @@ import {
   View,
 } from 'react-native';
 
+import { CatalogFilter } from '@/components/CatalogFilter';
+import { useCatalogFilter } from '@/components/useCatalogFilter';
 import type { CourseListItem } from '@/features/courses/api';
 import { CourseCard } from '@/features/courses/CourseCard';
 import { useCourses } from '@/features/courses/useCourses';
@@ -17,6 +19,13 @@ import { useCourses } from '@/features/courses/useCourses';
 export default function CoursesScreen() {
   const { courses, loading, refreshing, error, refresh } = useCourses();
   const router = useRouter();
+
+  const { query, setQuery, selectedCategory, setSelectedCategory, categories, filtered } =
+    useCatalogFilter({
+      items: courses,
+      getTitle: (c) => c.Title,
+      getCategory: (c) => c.Category,
+    });
 
   const openCourse = useCallback(
     (course: CourseListItem) => {
@@ -46,11 +55,22 @@ export default function CoursesScreen() {
 
   return (
     <FlatList
-      data={courses}
+      data={filtered}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <CourseCard course={item} onPress={openCourse} />}
       contentContainerStyle={styles.list}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
+      keyboardShouldPersistTaps="handled"
+      ListHeaderComponent={
+        <CatalogFilter
+          query={query}
+          onQuery={setQuery}
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          placeholder="Поиск курсов"
+        />
+      }
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       ListEmptyComponent={
         <View style={styles.centered}>
