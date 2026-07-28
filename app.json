@@ -27,6 +27,13 @@
     "plugins": [
       "expo-router",
       "expo-notifications"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "04b5f11e-fe62-4674-b74a-7b459be840dc"
+      }
+    },
+    "owner": "pupunya"
   }
 }
