@@ -37,6 +37,10 @@ function AuthGate() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="course/[slug]" options={{ headerShown: true, title: 'Курс' }} />
+      <Stack.Screen
+        name="profile/edit"
+        options={{ headerShown: true, title: 'Редактирование', presentation: 'modal' }}
+      />
     </Stack>
   );
 }

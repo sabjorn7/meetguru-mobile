@@ -163,6 +163,17 @@ export function accessFormatLabel(durationLong: number | null): string {
     : 'Доступ без ограничения по времени';
 }
 
+/** Fetch specific courses by id, preserving the given order. Used by "My courses". */
+export async function fetchCoursesByIds(ids: string[]): Promise<CourseListItem[]> {
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase.from('course').select(LIST_COLUMNS).in('id', ids);
+  if (error) throw error;
+
+  const byId = new Map((data ?? []).map((c) => [c.id, c]));
+  return ids.map((id) => byId.get(id)).filter((c): c is CourseListItem => c != null);
+}
+
 /** Average of the `rating` jsonb array, or null when there are no ratings. */
 export function averageRating(rating: CourseListItem['rating']): number | null {
   if (!Array.isArray(rating) || rating.length === 0) return null;

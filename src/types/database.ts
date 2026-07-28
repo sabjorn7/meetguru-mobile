@@ -159,6 +159,57 @@ export type Database = {
         };
         Relationships: [];
       };
+      users: {
+        Row: {
+          id: string;
+          email: string;
+          created_at: string | null;
+          role: string | null;
+          Photo: string | null;
+          Name: string | null;
+          Description: string | null;
+          username: string | null;
+          telegram_url: string | null;
+          whatsapp_url: string | null;
+          vk_url: string | null;
+          youtube_url: string | null;
+          website_url: string | null;
+          booking_url: string | null;
+        };
+        Insert: {
+          id: string;
+          email: string;
+          created_at?: string | null;
+          role?: string | null;
+          Photo?: string | null;
+          Name?: string | null;
+          Description?: string | null;
+          username?: string | null;
+          telegram_url?: string | null;
+          whatsapp_url?: string | null;
+          vk_url?: string | null;
+          youtube_url?: string | null;
+          website_url?: string | null;
+          booking_url?: string | null;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          created_at?: string | null;
+          role?: string | null;
+          Photo?: string | null;
+          Name?: string | null;
+          Description?: string | null;
+          username?: string | null;
+          telegram_url?: string | null;
+          whatsapp_url?: string | null;
+          vk_url?: string | null;
+          youtube_url?: string | null;
+          website_url?: string | null;
+          booking_url?: string | null;
+        };
+        Relationships: [];
+      };
       user_course: {
         Row: {
           id: string;
