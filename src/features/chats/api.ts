@@ -157,6 +157,131 @@ export async function sendMessage(
   return data.id;
 }
 
+/** A chat participant. */
+export type ChatMember = {
+  id: string;
+  name: string | null;
+  photo: string | null;
+  email: string;
+  role: string | null;
+};
+
+/** Fetch the participants of a chat (from its `users` array). */
+export async function fetchChatMembers(chatId: string): Promise<ChatMember[]> {
+  const { data: chat, error } = await supabase
+    .from('chats')
+    .select('users')
+    .eq('id', chatId)
+    .maybeSingle();
+  if (error) throw error;
+
+  const ids = (chat?.users ?? []).filter((id): id is string => typeof id === 'string');
+  if (ids.length === 0) return [];
+
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('id,Name,Photo,email,role')
+    .in('id', ids);
+  if (usersError) throw usersError;
+
+  return (users ?? []).map((u) => ({
+    id: u.id,
+    name: u.Name,
+    photo: u.Photo,
+    email: u.email,
+    role: u.role,
+  }));
+}
+
+/** A user matched by the new-chat search. */
+export type UserSearchResult = {
+  id: string;
+  name: string | null;
+  photo: string | null;
+  email: string;
+};
+
+/** Search users by name or email (excluding the current user). */
+export async function searchUsers(query: string, excludeId: string): Promise<UserSearchResult[]> {
+  const term = query.trim();
+  if (term.length < 2) return [];
+
+  const pattern = `%${term}%`;
+  const { data, error } = await supabase
+    .from('users')
+    .select('id,Name,Photo,email')
+    .or(`Name.ilike.${pattern},email.ilike.${pattern}`)
+    .neq('id', excludeId)
+    .limit(20);
+
+  if (error) throw error;
+  return (data ?? []).map((u) => ({ id: u.id, name: u.Name, photo: u.Photo, email: u.email }));
+}
+
+/**
+ * Return the existing 1:1 chat between the two users, or create one.
+ * A DB trigger appends the new chat id to each member's `users.chats`.
+ */
+export async function findOrCreateDirectChat(meId: string, otherId: string): Promise<string> {
+  const { data: existing, error: findError } = await supabase
+    .from('chats')
+    .select('id,users')
+    .eq('is_group', false)
+    .contains('users', [meId, otherId]);
+  if (findError) throw findError;
+
+  const match = (existing ?? []).find((c) => (c.users?.length ?? 0) === 2);
+  if (match) return match.id;
+
+  const { data, error } = await supabase
+    .from('chats')
+    .insert({
+      // is_group is a generated column (>2 users) — must not be set explicitly.
+      users: [meId, otherId],
+      user_1: meId,
+      user_2: otherId,
+      read: [meId],
+      sort_date: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+/**
+ * Create a group chat (>2 members). `is_group` is generated from member count,
+ * so it must not be set. The trigger syncs each member's `users.chats`.
+ */
+export async function createGroupChat(
+  meId: string,
+  otherIds: string[],
+  title: string,
+): Promise<string> {
+  const { data, error } = await supabase
+    .from('chats')
+    .insert({
+      users: [meId, ...otherIds],
+      title: title.trim(),
+      creator: meId,
+      read: [meId],
+      sort_date: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+/**
+ * Delete a chat for everyone. A BEFORE DELETE trigger removes its messages and
+ * unlinks it from each member's `users.chats`.
+ */
+export async function deleteChat(chatId: string): Promise<void> {
+  const { error } = await supabase.from('chats').delete().eq('id', chatId);
+  if (error) throw error;
+}
+
 /** Mark a chat as read by the current user (idempotent RPC). */
 export async function markChatRead(chatId: string, userId: string): Promise<void> {
   const { error } = await supabase.rpc('add_user_to_chat_read', {

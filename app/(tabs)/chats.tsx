@@ -2,6 +2,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   Pressable,
@@ -11,8 +12,9 @@ import {
   View,
 } from 'react-native';
 
-import type { ChatListItem } from '@/features/chats/api';
+import { deleteChat, type ChatListItem } from '@/features/chats/api';
 import { useChats } from '@/features/chats/useChats';
+import { errorMessage } from '@/lib/errors';
 
 const timeFormatter = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' });
@@ -26,11 +28,20 @@ function formatWhen(iso: string | null): string {
   return sameDay ? timeFormatter.format(parsed) : dateFormatter.format(parsed);
 }
 
-function ChatRow({ chat, onPress }: { chat: ChatListItem; onPress: (c: ChatListItem) => void }) {
+function ChatRow({
+  chat,
+  onPress,
+  onLongPress,
+}: {
+  chat: ChatListItem;
+  onPress: (c: ChatListItem) => void;
+  onLongPress: (c: ChatListItem) => void;
+}) {
   return (
     <Pressable
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
       onPress={() => onPress(chat)}
+      onLongPress={() => onLongPress(chat)}
     >
       {chat.photo ? (
         <Image source={{ uri: chat.photo }} style={styles.avatar} />
@@ -74,9 +85,33 @@ export default function ChatsScreen() {
 
   const openChat = useCallback(
     (chat: ChatListItem) => {
-      router.push({ pathname: '/chat/[id]', params: { id: chat.id, title: chat.title } });
+      router.push({
+        pathname: '/chat/[id]',
+        params: { id: chat.id, title: chat.title, isGroup: chat.isGroup ? '1' : '' },
+      });
     },
     [router],
+  );
+
+  const confirmDelete = useCallback(
+    (chat: ChatListItem) => {
+      Alert.alert('Удалить чат?', `«${chat.title}» будет удалён у всех участников.`, [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Удалить',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteChat(chat.id);
+              refresh();
+            } catch (e) {
+              Alert.alert('Ошибка', errorMessage(e, 'Не удалось удалить чат.'));
+            }
+          },
+        },
+      ]);
+    },
+    [refresh],
   );
 
   if (loading) {
@@ -102,7 +137,9 @@ export default function ChatsScreen() {
     <FlatList
       data={chats}
       keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <ChatRow chat={item} onPress={openChat} />}
+      renderItem={({ item }) => (
+        <ChatRow chat={item} onPress={openChat} onLongPress={confirmDelete} />
+      )}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       contentContainerStyle={chats.length === 0 ? styles.emptyContainer : undefined}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}

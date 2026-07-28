@@ -1,4 +1,5 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -45,8 +46,13 @@ function MessageBubble({ message }: { message: DisplayMessage }) {
 }
 
 export default function ChatScreen() {
-  const { id, title } = useLocalSearchParams<{ id: string; title?: string }>();
+  const { id, title, isGroup } = useLocalSearchParams<{
+    id: string;
+    title?: string;
+    isGroup?: string;
+  }>();
   const { messages, loading, error, send } = useConversation(id);
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState('');
 
@@ -66,7 +72,24 @@ export default function ChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <Stack.Screen options={{ title: title || 'Диалог' }} />
+      <Stack.Screen
+        options={{
+          title: title || 'Диалог',
+          headerRight: isGroup
+            ? () => (
+                <Pressable
+                  onPress={() =>
+                    router.push({ pathname: '/chat/members', params: { chatId: id, title } })
+                  }
+                  hitSlop={12}
+                  style={{ paddingHorizontal: 8 }}
+                >
+                  <Ionicons name="people" size={22} color="#2563eb" />
+                </Pressable>
+              )
+            : undefined,
+        }}
+      />
 
       {loading ? (
         <View style={styles.centered}>
@@ -76,6 +99,10 @@ export default function ChatScreen() {
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
+      ) : messages.length === 0 ? (
+        <View style={styles.centered}>
+          <Text style={styles.muted}>Сообщений пока нет</Text>
+        </View>
       ) : (
         <FlatList
           data={inverted}
@@ -83,11 +110,6 @@ export default function ChatScreen() {
           renderItem={({ item }) => <MessageBubble message={item} />}
           inverted
           contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyInverted}>
-              <Text style={styles.muted}>Сообщений пока нет</Text>
-            </View>
-          }
         />
       )}
 
@@ -126,11 +148,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 12,
     paddingVertical: 12,
-  },
-  emptyInverted: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    transform: [{ scaleY: -1 }],
   },
   bubbleRow: {
     marginVertical: 3,

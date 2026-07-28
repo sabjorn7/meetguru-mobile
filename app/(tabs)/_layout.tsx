@@ -1,7 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
+import { Pressable } from 'react-native';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
+
+function NewChatButton() {
+  const router = useRouter();
+  return (
+    <Pressable
+      onPress={() => router.push('/chat/new')}
+      hitSlop={12}
+      style={{ paddingHorizontal: 16 }}
+    >
+      <Ionicons name="create-outline" size={24} color="#2563eb" />
+    </Pressable>
+  );
+}
 
 function tabIcon(active: IoniconName, inactive: IoniconName) {
   return ({ color, size, focused }: { color: string; size: number; focused: boolean }) => (
@@ -25,6 +39,7 @@ export default function TabsLayout() {
         options={{
           title: 'Чаты',
           tabBarIcon: tabIcon('chatbubble-ellipses', 'chatbubble-ellipses-outline'),
+          headerRight: () => <NewChatButton />,
         }}
       />
       <Tabs.Screen
