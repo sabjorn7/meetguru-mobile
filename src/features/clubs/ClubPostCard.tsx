@@ -30,6 +30,7 @@ export function ClubPostCard({
   const [liked, setLiked] = useState(post.likedByMe);
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [likeBusy, setLikeBusy] = useState(false);
+  const [playing, setPlaying] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [comments, setComments] = useState<ClubComment[]>([]);
@@ -124,7 +125,20 @@ export function ClubPostCard({
         <Image key={uri} source={{ uri }} style={styles.photo} resizeMode="cover" />
       ))}
 
-      {post.video ? <PeerTubePlayer videoId={post.video} style={styles.video} /> : null}
+      {post.video ? (
+        playing ? (
+          <PeerTubePlayer videoId={post.video} style={styles.video} />
+        ) : (
+          <Pressable style={styles.videoPlaceholder} onPress={() => setPlaying(true)}>
+            <View style={styles.playCircle}>
+              <Ionicons name="play" size={28} color={colors.white} style={{ marginLeft: 3 }} />
+            </View>
+            <AppText variant="label" style={{ color: colors.white, marginTop: spacing.sm }}>
+              Смотреть видео
+            </AppText>
+          </Pressable>
+        )
+      ) : null}
 
       <View style={styles.actions}>
         <Pressable onPress={onToggleLike} style={styles.action} hitSlop={8}>
@@ -204,6 +218,23 @@ const styles = StyleSheet.create({
   text: { marginTop: 2 },
   photo: { width: '100%', height: 240, borderRadius: radius.md, backgroundColor: colors.primarySoft },
   video: { marginTop: spacing.xs },
+  videoPlaceholder: {
+    width: '100%',
+    height: 200,
+    borderRadius: radius.md,
+    backgroundColor: '#1f2733',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xs,
+  },
+  playCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   actions: { flexDirection: 'row', gap: spacing.xl, marginTop: spacing.xs },
   action: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   comments: {

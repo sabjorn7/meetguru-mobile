@@ -63,6 +63,9 @@ function AuthGate() {
       <Stack.Screen name="user/[id]" options={{ headerShown: true, title: 'Профиль' }} />
       <Stack.Screen name="downloads" options={{ headerShown: true, title: 'Загрузки' }} />
       <Stack.Screen name="finance" options={{ headerShown: true, title: 'Финансы' }} />
+      <Stack.Screen name="subscriptions" options={{ headerShown: true, title: 'Подписки' }} />
+      <Stack.Screen name="clubs" options={{ headerShown: true, title: 'Клубы' }} />
+      <Stack.Screen name="club/[id]" options={{ headerShown: true, title: 'Клуб' }} />
       <Stack.Screen name="chat/[id]" options={{ headerShown: true, title: 'Диалог' }} />
       <Stack.Screen
         name="chat/new"

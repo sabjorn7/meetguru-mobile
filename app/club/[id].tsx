@@ -3,9 +3,11 @@ import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   Image,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -43,6 +45,7 @@ export default function ClubScreen() {
   const [tab, setTab] = useState<Tab>(tabParam === 'chat' ? 'chat' : 'posts');
   const [posts, setPosts] = useState<ClubPost[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [postsLoaded, setPostsLoaded] = useState(false);
 
   const access = !!user && !!club && clubHasAccess(club.ownerId, sub, user.id);
 
@@ -71,6 +74,7 @@ export default function ClubScreen() {
     setPostsLoading(true);
     try {
       setPosts(await fetchClubPosts(id, user.id));
+      setPostsLoaded(true);
     } catch {
       // ignore
     } finally {
@@ -79,8 +83,8 @@ export default function ClubScreen() {
   }, [id, user]);
 
   useEffect(() => {
-    if (access && tab === 'posts' && posts.length === 0) loadPosts();
-  }, [access, tab, posts.length, loadPosts]);
+    if (access && tab === 'posts' && !postsLoaded) loadPosts();
+  }, [access, tab, postsLoaded, loadPosts]);
 
   if (loading) {
     return (
@@ -104,88 +108,107 @@ export default function ClubScreen() {
 
   const isExpired = sub != null && !access;
   const openSite = () => WebBrowser.openBrowserAsync(clubSiteUrl(club.id));
+  const screen = <Stack.Screen options={{ title: club.title ?? 'Клуб' }} />;
 
+  // Paywall — non-subscribers see the full pitch (cover + long description) + site CTA.
+  if (!access) {
+    return (
+      <ScrollView contentContainerStyle={styles.paywallContent}>
+        {screen}
+        {club.cover ? <Image source={{ uri: club.cover }} style={styles.cover} /> : null}
+        <Card style={styles.paywall}>
+          <AppText variant="h2" style={{ textAlign: 'center' }}>
+            {club.title ?? 'Клуб'}
+          </AppText>
+          {club.descr ? (
+            <AppText variant="body" style={{ color: colors.body }}>
+              {club.descr}
+            </AppText>
+          ) : club.shortDescr ? (
+            <AppText variant="body" style={{ color: colors.body }}>
+              {club.shortDescr}
+            </AppText>
+          ) : null}
+          <AppText variant="title" style={{ textAlign: 'center', marginTop: spacing.sm }}>
+            {isExpired ? 'Подписка истекла' : 'Доступ только для подписчиков'}
+          </AppText>
+          <PillButton
+            label={isExpired ? 'Продлить подписку' : 'Оформить подписку'}
+            onPress={openSite}
+          />
+          <AppText variant="label" style={{ color: colors.faint, textAlign: 'center' }}>
+            Оплата и управление подпиской — на сайте meetgu.ru
+          </AppText>
+        </Card>
+      </ScrollView>
+    );
+  }
+
+  // Subscriber / owner — tabs; compact header (no long description).
   return (
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Stack.Screen options={{ title: club.title ?? 'Клуб' }} />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Card style={styles.headerCard}>
-          {club.cover ? <Image source={{ uri: club.cover }} style={styles.cover} /> : null}
-          <View style={styles.headerBody}>
-            <AppText variant="h2">{club.title ?? 'Клуб'}</AppText>
-            {club.shortDescr ? (
-              <AppText variant="body" style={{ color: colors.muted }}>
+      {screen}
+      <View style={styles.tabsBar}>
+        <SegmentedTabs
+          options={[
+            { value: 'posts', label: 'Записи' },
+            { value: 'chat', label: 'Чат клуба' },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+      </View>
+
+      {tab === 'posts' ? (
+        <FlatList
+          data={posts}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <ClubPostCard
+              post={item}
+              userId={user!.id}
+              ownerName={club.ownerName}
+              ownerPhoto={club.ownerPhoto}
+            />
+          )}
+          contentContainerStyle={styles.feed}
+          ItemSeparatorComponent={() => <View style={{ height: spacing.lg }} />}
+          initialNumToRender={4}
+          windowSize={5}
+          removeClippedSubviews
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={postsLoading} onRefresh={loadPosts} tintColor={colors.primary} />
+          }
+          ListHeaderComponent={
+            club.shortDescr ? (
+              <AppText variant="body" style={styles.shortDescr}>
                 {club.shortDescr}
               </AppText>
-            ) : null}
-            {club.descr ? <AppText variant="body">{club.descr}</AppText> : null}
-          </View>
-        </Card>
-
-        {access ? (
-          <>
-            <SegmentedTabs
-              options={[
-                { value: 'posts', label: 'Записи' },
-                { value: 'chat', label: 'Чат клуба' },
-              ]}
-              value={tab}
-              onChange={setTab}
-            />
-            {tab === 'posts' ? (
-              postsLoading ? (
-                <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
-              ) : posts.length === 0 ? (
-                <AppText variant="body" style={{ color: colors.muted, textAlign: 'center', marginTop: spacing.lg }}>
-                  Пока нет записей
-                </AppText>
-              ) : (
-                <View style={{ gap: spacing.lg }}>
-                  {posts.map((p) => (
-                    <ClubPostCard
-                      key={p.id}
-                      post={p}
-                      userId={user!.id}
-                      ownerName={club.ownerName}
-                      ownerPhoto={club.ownerPhoto}
-                    />
-                  ))}
-                </View>
-              )
+            ) : null
+          }
+          ListEmptyComponent={
+            postsLoading ? (
+              <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
             ) : (
-              <ClubChat clubId={club.id} userId={user!.id} />
-            )}
-          </>
-        ) : (
-          <Card style={styles.paywall}>
-            <AppText variant="title" style={{ textAlign: 'center' }}>
-              {isExpired ? 'Подписка истекла' : 'Доступ только для подписчиков'}
-            </AppText>
-            <AppText variant="body" style={{ color: colors.muted, textAlign: 'center' }}>
-              {isExpired
-                ? 'Продлите подписку на сайте, чтобы снова читать записи и чат клуба.'
-                : 'Оформите подписку на сайте, чтобы получить доступ к записям и чату клуба.'}
-            </AppText>
-            <PillButton
-              label={isExpired ? 'Продлить подписку' : 'Оформить подписку'}
-              onPress={openSite}
-            />
-            <AppText variant="label" style={{ color: colors.faint, textAlign: 'center' }}>
-              Оплата и управление подпиской — на сайте meetgu.ru
-            </AppText>
-          </Card>
-        )}
-      </ScrollView>
+              <AppText variant="body" style={styles.empty}>
+                Пока нет записей
+              </AppText>
+            )
+          }
+        />
+      ) : (
+        <ClubChat clubId={club.id} userId={user!.id} />
+      )}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg },
   centered: {
     flex: 1,
     alignItems: 'center',
@@ -193,8 +216,11 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     backgroundColor: colors.bg,
   },
-  headerCard: { padding: 0, overflow: 'hidden' },
-  cover: { width: '100%', height: 160, backgroundColor: colors.primarySoft },
-  headerBody: { padding: spacing.lg, gap: spacing.sm },
-  paywall: { gap: spacing.md, padding: spacing.xl, alignItems: 'stretch' },
+  tabsBar: { padding: spacing.lg, paddingBottom: spacing.sm, backgroundColor: colors.bg },
+  feed: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1 },
+  shortDescr: { color: colors.muted, marginBottom: spacing.lg },
+  empty: { color: colors.muted, textAlign: 'center', marginTop: spacing.xl },
+  paywallContent: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.lg, backgroundColor: colors.bg },
+  cover: { width: '100%', height: 180, borderRadius: radius.lg, backgroundColor: colors.primarySoft },
+  paywall: { gap: spacing.md, padding: spacing.xl },
 });

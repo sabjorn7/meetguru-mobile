@@ -1,14 +1,48 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AppText, Card, TextField } from '@/components/ui';
+import { AppText } from '@/components/ui';
 import { errorMessage } from '@/lib/errors';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts } from '@/theme';
 
 import { fetchClubChat, formatClubDate, sendClubChat, type ClubChatMessage } from './api';
 
+function ChatRow({ msg, mine }: { msg: ClubChatMessage; mine: boolean }) {
+  return (
+    <View style={[styles.row, mine ? styles.rowMine : styles.rowOther]}>
+      {!mine && msg.authorPhoto ? (
+        <Image source={{ uri: msg.authorPhoto }} style={styles.avatar} />
+      ) : !mine ? (
+        <View style={[styles.avatar, styles.avatarFallback]}>
+          <Text style={styles.avatarInitial}>{(msg.authorName || '?')[0]?.toUpperCase() ?? '?'}</Text>
+        </View>
+      ) : null}
+      <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleOther]}>
+        {!mine ? <Text style={styles.author}>{msg.authorName || 'Участник'}</Text> : null}
+        {msg.text ? (
+          <Text style={[styles.text, mine && styles.textMine]}>{msg.text}</Text>
+        ) : null}
+        {msg.images.map((uri) => (
+          <Image key={uri} source={{ uri }} style={styles.image} resizeMode="cover" />
+        ))}
+        <Text style={[styles.time, mine && styles.timeMine]}>{formatClubDate(msg.createdAt)}</Text>
+      </View>
+    </View>
+  );
+}
+
 export function ClubChat({ clubId, userId }: { clubId: string; userId: string }) {
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<ClubChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState('');
@@ -18,7 +52,7 @@ export function ClubChat({ clubId, userId }: { clubId: string; userId: string })
     try {
       setMessages(await fetchClubChat(clubId));
     } catch {
-      // ignore — keep whatever is shown
+      // ignore
     }
   }, [clubId]);
 
@@ -26,6 +60,9 @@ export function ClubChat({ clubId, userId }: { clubId: string; userId: string })
     setLoading(true);
     load().finally(() => setLoading(false));
   }, [load]);
+
+  // Inverted list: newest at the bottom, pinned automatically.
+  const inverted = useMemo(() => [...messages].reverse(), [messages]);
 
   async function send() {
     const text = draft.trim();
@@ -42,60 +79,42 @@ export function ClubChat({ clubId, userId }: { clubId: string; userId: string })
     }
   }
 
-  if (loading) {
-    return <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />;
-  }
-
   return (
-    <View style={styles.wrap}>
-      {messages.length === 0 ? (
-        <AppText variant="body" style={{ color: colors.muted, textAlign: 'center', marginTop: spacing.lg }}>
-          Пока нет сообщений
-        </AppText>
+    <View style={styles.flex}>
+      {loading ? (
+        <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
+      ) : messages.length === 0 ? (
+        <View style={styles.empty}>
+          <AppText variant="body" style={{ color: colors.muted }}>
+            Пока нет сообщений
+          </AppText>
+        </View>
       ) : (
-        messages.map((m) => (
-          <Card key={m.id} style={styles.msg}>
-            <View style={styles.msgHead}>
-              {m.authorPhoto ? (
-                <Image source={{ uri: m.authorPhoto }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.avatarFallback]}>
-                  <AppText variant="label" style={{ color: colors.primary }}>
-                    {(m.authorName || '?')[0]?.toUpperCase() ?? '?'}
-                  </AppText>
-                </View>
-              )}
-              <View style={{ flex: 1 }}>
-                <AppText variant="subtitle" numberOfLines={1}>
-                  {m.authorName || 'Участник'}
-                </AppText>
-                <AppText variant="label" style={{ color: colors.muted }}>
-                  {formatClubDate(m.createdAt)}
-                </AppText>
-              </View>
-            </View>
-            {m.text ? <AppText variant="body">{m.text}</AppText> : null}
-            {m.images.map((uri) => (
-              <Image key={uri} source={{ uri }} style={styles.image} resizeMode="cover" />
-            ))}
-          </Card>
-        ))
+        <FlatList
+          data={inverted}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <ChatRow msg={item} mine={item.authorId === userId} />}
+          inverted
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
+        />
       )}
 
-      <View style={styles.composer}>
-        <TextField
+      <View style={[styles.inputBar, { paddingBottom: insets.bottom || 8 }]}>
+        <TextInput
+          style={styles.input}
           value={draft}
           onChangeText={setDraft}
           placeholder="Начните печатать…"
-          style={{ flex: 1 }}
+          placeholderTextColor="#9ca3af"
           multiline
         />
-        <Pressable onPress={send} disabled={sending || !draft.trim()} style={styles.send} hitSlop={8}>
-          {sending ? (
-            <ActivityIndicator color={colors.primary} />
-          ) : (
-            <Ionicons name="send" size={22} color={draft.trim() ? colors.primary : colors.faint} />
-          )}
+        <Pressable
+          style={[styles.sendButton, (!draft.trim() || sending) && styles.sendDisabled]}
+          onPress={send}
+          disabled={!draft.trim() || sending}
+        >
+          {sending ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendText}>➤</Text>}
         </Pressable>
       </View>
     </View>
@@ -103,12 +122,55 @@ export function ClubChat({ clubId, userId }: { clubId: string; userId: string })
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  msg: { gap: spacing.sm, padding: spacing.lg },
-  msgHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  avatar: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: colors.primarySoft },
+  flex: { flex: 1, backgroundColor: colors.bg },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  listContent: { paddingHorizontal: 12, paddingVertical: 12 },
+  row: { marginVertical: 3, flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  rowMine: { justifyContent: 'flex-end' },
+  rowOther: { justifyContent: 'flex-start' },
+  avatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.primarySoft },
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
-  image: { width: '100%', height: 220, borderRadius: radius.md, backgroundColor: colors.primarySoft },
-  composer: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginTop: spacing.sm },
-  send: { paddingBottom: 14, paddingHorizontal: 4 },
+  avatarInitial: { fontFamily: fonts.medium, fontSize: 12, color: colors.primary },
+  bubble: { maxWidth: '78%', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, gap: 3 },
+  bubbleMine: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
+  bubbleOther: { backgroundColor: '#f1f3f5', borderBottomLeftRadius: 4 },
+  author: { fontFamily: fonts.medium, fontSize: 12, color: colors.primary },
+  text: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 20, color: colors.ink },
+  textMine: { color: colors.white },
+  image: { width: 200, height: 150, borderRadius: 10, backgroundColor: colors.primarySoft },
+  time: { fontSize: 11, color: '#9ca3af', alignSelf: 'flex-end' },
+  timeMine: { color: '#c7dbff' },
+  inputBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    backgroundColor: colors.bg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e5e7eb',
+  },
+  input: {
+    flex: 1,
+    maxHeight: 120,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    fontFamily: fonts.regular,
+    fontSize: 15,
+    color: colors.ink,
+    backgroundColor: colors.white,
+  },
+  sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendDisabled: { opacity: 0.4 },
+  sendText: { color: '#fff', fontSize: 18 },
 });
