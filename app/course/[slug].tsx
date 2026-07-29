@@ -43,7 +43,7 @@ type Tab = 'lessons' | 'about';
 
 export default function CourseDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { course, lessons, studentsCount, hasAccess, notFound, loading, error, refreshAccess, reload } =
+  const { course, lessons, studentsCount, hasAccess, canReview, notFound, loading, error, refreshAccess, reload } =
     useCourseDetail(slug);
   const { user } = useAuth();
 
@@ -274,7 +274,7 @@ export default function CourseDetailScreen() {
         </View>
       )}
 
-      {user ? (
+      {canReview ? (
         <Card style={styles.reviewCard} elevated>
           <AppText variant="title">Ваша оценка</AppText>
           <RatingInput value={myRating ?? 0} onChange={handleRate} disabled={submittingRating} />
@@ -292,6 +292,14 @@ export default function CourseDetailScreen() {
             loading={submittingReview}
             disabled={!reviewText.trim()}
           />
+        </Card>
+      ) : user ? (
+        <Card style={styles.reviewHintCard} elevated={false}>
+          <AppText variant="body" style={{ color: colors.muted, textAlign: 'center' }}>
+            {isFree
+              ? 'Добавьте курс себе, чтобы оценить его и оставить отзыв.'
+              : 'Оставить отзыв могут участники курса.'}
+          </AppText>
         </Card>
       ) : null}
 
@@ -449,6 +457,11 @@ const styles = StyleSheet.create({
   reviewCard: {
     padding: spacing.lg,
     gap: spacing.md,
+  },
+  reviewHintCard: {
+    padding: spacing.lg,
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primarySoft,
   },
   reviewInput: {
     borderWidth: 1,

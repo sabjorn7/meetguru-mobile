@@ -239,6 +239,24 @@ export async function submitCourseReview(
   if (updateError) throw updateError;
 }
 
+/**
+ * Whether the user is a member of the course — has a `user_course` row (bought,
+ * or added a free course). Unlike `checkCourseAccess`, free courses do NOT count
+ * without a row. Used to gate leaving a review (parity with the website).
+ */
+export async function hasCourseMembership(courseId: string, userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('user_course')
+    .select('id')
+    .eq('course', courseId)
+    .eq('user', userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data !== null;
+}
+
 /** Average of the `rating` jsonb array, or null when there are no ratings. */
 export function averageRating(rating: CourseListItem['rating']): number | null {
   if (!Array.isArray(rating) || rating.length === 0) return null;
