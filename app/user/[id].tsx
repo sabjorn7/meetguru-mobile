@@ -8,13 +8,13 @@ import { fetchProfile, publicProfileUrl, roleLabel, type Profile } from '@/featu
 import { errorMessage } from '@/lib/errors';
 import { colors, radius, spacing } from '@/theme';
 
+// booking_url is surfaced as the big "Записаться" button, so it's excluded here.
 const SOCIAL_FIELDS: { key: keyof Profile; label: string }[] = [
   { key: 'telegram_url', label: 'Telegram' },
   { key: 'whatsapp_url', label: 'WhatsApp' },
   { key: 'vk_url', label: 'VK' },
   { key: 'youtube_url', label: 'YouTube' },
   { key: 'website_url', label: 'Сайт' },
-  { key: 'booking_url', label: 'Запись' },
 ];
 
 export default function UserProfileScreen() {
