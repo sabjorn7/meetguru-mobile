@@ -136,6 +136,11 @@ export default function ProfileScreen() {
           onPress={() => router.push('/profile/edit')}
         />
         <PillButton
+          label="Финансы"
+          variant="outline"
+          onPress={() => router.push('/finance')}
+        />
+        <PillButton
           label="Загрузки (офлайн)"
           variant="outline"
           onPress={() => router.push('/downloads')}

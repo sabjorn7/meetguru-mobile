@@ -357,12 +357,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      order: {
+        Row: {
+          id: string;
+          created_at: string;
+          num: string | null;
+          paid: boolean | null;
+          summ: number | null;
+          owner: string | null;
+          subscription: boolean | null;
+          course_positions: string[] | null;
+        };
+        Insert: { id?: string; created_at?: string };
+        Update: { id?: string; created_at?: string };
+        Relationships: [];
+      };
+      sales: {
+        Row: {
+          id: string;
+          created_at: string;
+          user: string | null;
+          amount: number | null;
+          price: number | null;
+          position_name: string | null;
+          position_category: string | null;
+          status: string | null;
+          back: boolean | null;
+          sub: boolean | null;
+        };
+        Insert: { id?: string; created_at?: string };
+        Update: { id?: string; created_at?: string };
+        Relationships: [];
+      };
       users: {
         Row: {
           id: string;
           email: string;
           created_at: string | null;
           role: string | null;
+          Ammount: number | null;
           Photo: string | null;
           Name: string | null;
           Description: string | null;
