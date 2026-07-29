@@ -8,15 +8,16 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
+import { AppText, Card, PillButton } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
 import type { CourseListItem } from '@/features/courses/api';
 import { CourseCard } from '@/features/courses/CourseCard';
 import { roleLabel, type Profile } from '@/features/profile/api';
 import { useProfile } from '@/features/profile/useProfile';
+import { colors, radius, spacing } from '@/theme';
 
 const SOCIAL_FIELDS: { key: keyof Profile; label: string }[] = [
   { key: 'telegram_url', label: 'Telegram' },
@@ -34,7 +35,6 @@ export default function ProfileScreen() {
 
   const [signingOut, setSigningOut] = useState(false);
 
-  // Refresh when returning to the tab (e.g. after editing), but not on first mount.
   const firstFocus = useRef(true);
   useFocusEffect(
     useCallback(() => {
@@ -65,61 +65,91 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   const displayName = profile?.Name?.trim() || 'Пользователь';
   const socials = SOCIAL_FIELDS.map((f) => ({ ...f, url: profile?.[f.key] })).filter(
-    (f): f is { key: keyof Profile; label: string; url: string } => typeof f.url === 'string' && f.url.length > 0,
+    (f): f is { key: keyof Profile; label: string; url: string } =>
+      typeof f.url === 'string' && f.url.length > 0,
   );
 
   return (
     <ScrollView
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />
+      }
     >
-      <View style={styles.header}>
+      <Card style={styles.headerCard}>
         {profile?.Photo ? (
           <Image source={{ uri: profile.Photo }} style={styles.avatar} />
         ) : (
           <View style={[styles.avatar, styles.avatarFallback]}>
-            <Text style={styles.avatarInitial}>{displayName[0]?.toUpperCase() ?? '?'}</Text>
+            <AppText variant="h1" style={{ color: colors.faint }}>
+              {displayName[0]?.toUpperCase() ?? '?'}
+            </AppText>
           </View>
         )}
-        <Text style={styles.name}>{displayName}</Text>
-        {profile?.role ? <Text style={styles.role}>{roleLabel(profile.role)}</Text> : null}
-        <Text style={styles.email}>{profile?.email ?? user?.email ?? ''}</Text>
-      </View>
+        <AppText variant="h2">{displayName}</AppText>
+        {profile?.role ? (
+          <AppText variant="label" style={{ color: colors.primary }}>
+            {roleLabel(profile.role)}
+          </AppText>
+        ) : null}
+        <AppText variant="caption" style={{ color: colors.muted }}>
+          {profile?.email ?? user?.email ?? ''}
+        </AppText>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+        {profile?.Description ? (
+          <AppText variant="body" style={styles.description}>
+            {profile.Description}
+          </AppText>
+        ) : null}
 
-      {profile?.Description ? <Text style={styles.description}>{profile.Description}</Text> : null}
+        {socials.length > 0 ? (
+          <View style={styles.socialRow}>
+            {socials.map((s) => (
+              <Pressable key={s.key} style={styles.socialChip} onPress={() => Linking.openURL(s.url)}>
+                <AppText variant="label" style={{ color: colors.primary }}>
+                  {s.label}
+                </AppText>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+      </Card>
 
-      {socials.length > 0 ? (
-        <View style={styles.socialRow}>
-          {socials.map((s) => (
-            <Pressable key={s.key} style={styles.socialChip} onPress={() => Linking.openURL(s.url)}>
-              <Text style={styles.socialText}>{s.label}</Text>
-            </Pressable>
-          ))}
-        </View>
+      {error ? (
+        <AppText variant="caption" style={{ color: colors.danger, textAlign: 'center' }}>
+          {error}
+        </AppText>
       ) : null}
 
       <View style={styles.actions}>
-        <Pressable style={styles.editButton} onPress={() => router.push('/profile/edit')}>
-          <Text style={styles.editText}>Редактировать профиль</Text>
-        </Pressable>
-        <Pressable style={styles.editButton} onPress={() => router.push('/downloads')}>
-          <Text style={styles.editText}>Загрузки (офлайн)</Text>
-        </Pressable>
+        <PillButton
+          label="Редактировать профиль"
+          variant="outline"
+          onPress={() => router.push('/profile/edit')}
+        />
+        <PillButton
+          label="Загрузки (офлайн)"
+          variant="outline"
+          onPress={() => router.push('/downloads')}
+        />
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Мои курсы{myCourses.length ? ` · ${myCourses.length}` : ''}</Text>
+        <AppText variant="title">
+          Мои курсы{myCourses.length ? ` · ${myCourses.length}` : ''}
+        </AppText>
         {myCourses.length === 0 ? (
-          <Text style={styles.muted}>У вас пока нет курсов</Text>
+          <AppText variant="body" style={{ color: colors.muted }}>
+            У вас пока нет курсов
+          </AppText>
         ) : (
           <View style={styles.courseList}>
             {myCourses.map((course) => (
@@ -130,14 +160,16 @@ export default function ProfileScreen() {
       </View>
 
       <Pressable
-        style={[styles.signOutButton, signingOut && styles.disabled]}
+        style={[styles.signOut, signingOut && styles.disabled]}
         onPress={handleSignOut}
         disabled={signingOut}
       >
         {signingOut ? (
-          <ActivityIndicator color="#dc2626" />
+          <ActivityIndicator color={colors.danger} />
         ) : (
-          <Text style={styles.signOutText}>Выйти</Text>
+          <AppText variant="subtitle" style={{ color: colors.danger }}>
+            Выйти
+          </AppText>
         )}
       </Pressable>
     </ScrollView>
@@ -146,120 +178,57 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    padding: 16,
-    paddingBottom: 32,
-    gap: 16,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+    gap: spacing.lg,
+    backgroundColor: colors.bg,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.bg,
   },
-  header: {
+  headerCard: {
     alignItems: 'center',
     gap: 4,
+    padding: spacing.xl,
   },
   avatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: '#e5e7eb',
-    marginBottom: 8,
+    width: 92,
+    height: 92,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+    marginBottom: spacing.sm,
   },
-  avatarFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitial: {
-    fontSize: 34,
-    fontWeight: '700',
-    color: '#6b7280',
-  },
-  name: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  role: {
-    fontSize: 13,
-    color: '#2563eb',
-    fontWeight: '600',
-  },
-  email: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
+  avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   description: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#374151',
     textAlign: 'center',
+    marginTop: spacing.sm,
   },
   socialRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
     justifyContent: 'center',
+    marginTop: spacing.sm,
   },
   socialChip: {
-    backgroundColor: '#f1f5f9',
-    borderRadius: 8,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.sm,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
-  socialText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#475569',
-  },
-  actions: {
-    gap: 8,
-  },
-  editButton: {
-    borderWidth: 1,
-    borderColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 12,
+  actions: { gap: spacing.sm },
+  section: { gap: spacing.md },
+  courseList: { gap: spacing.lg },
+  signOut: {
+    borderWidth: 1.5,
+    borderColor: colors.danger,
+    borderRadius: radius.pill,
+    height: 52,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  editText: {
-    color: '#2563eb',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  section: {
-    gap: 12,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  courseList: {
-    gap: 16,
-  },
-  muted: {
-    fontSize: 15,
-    color: '#6b7280',
-  },
-  error: {
-    color: '#dc2626',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  signOutButton: {
-    borderWidth: 1,
-    borderColor: '#dc2626',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  signOutText: {
-    color: '#dc2626',
-    fontSize: 15,
-    fontWeight: '600',
-  },
+  disabled: { opacity: 0.5 },
 });

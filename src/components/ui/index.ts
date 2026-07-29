@@ -5,3 +5,4 @@ export { IconButton } from './IconButton';
 export { PillButton } from './PillButton';
 export { PromoBanner } from './PromoBanner';
 export { SegmentedTabs } from './SegmentedTabs';
+export { TextField } from './TextField';

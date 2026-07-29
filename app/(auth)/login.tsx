@@ -1,20 +1,13 @@
 import { Link } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppText, PillButton, TextField } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
+import { errorMessage } from '@/lib/errors';
+import { colors, spacing } from '@/theme';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -31,15 +24,13 @@ export default function LoginScreen() {
     setError(null);
     try {
       await signIn(email, password);
-      // On success the auth guard in the root layout redirects to (tabs).
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось войти. Попробуйте ещё раз.');
+      setError(errorMessage(e, 'Не удалось войти. Попробуйте ещё раз.'));
     } finally {
       setSubmitting(false);
     }
   }
 
-  // Password recovery runs on the website (custom Unisender flow); open it there.
   function handleForgotPassword() {
     Alert.alert(
       'Восстановление пароля',
@@ -53,18 +44,17 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.container}>
-          <Text style={styles.title}>MeetGuru</Text>
-          <Text style={styles.subtitle}>Вход в аккаунт</Text>
+          <AppText variant="h1" style={styles.title}>
+            MeetGuru
+          </AppText>
+          <AppText variant="body" style={styles.subtitle}>
+            Вход в аккаунт
+          </AppText>
 
-          <TextInput
-            style={styles.input}
+          <TextField
             placeholder="Email"
-            placeholderTextColor="#9ca3af"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -73,10 +63,8 @@ export default function LoginScreen() {
             textContentType="emailAddress"
             editable={!submitting}
           />
-          <TextInput
-            style={styles.input}
+          <TextField
             placeholder="Пароль"
-            placeholderTextColor="#9ca3af"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -88,27 +76,31 @@ export default function LoginScreen() {
           />
 
           <Pressable onPress={handleForgotPassword} hitSlop={8} style={styles.forgot}>
-            <Text style={styles.forgotText}>Забыли пароль?</Text>
+            <AppText variant="caption" style={{ color: colors.primary }}>
+              Забыли пароль?
+            </AppText>
           </Pressable>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <AppText variant="caption" style={{ color: colors.danger }}>
+              {error}
+            </AppText>
+          ) : null}
 
-          <Pressable
-            style={[styles.button, !canSubmit && styles.buttonDisabled]}
+          <PillButton
+            label="Войти"
             onPress={handleSignIn}
+            loading={submitting}
             disabled={!canSubmit}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Войти</Text>
-            )}
-          </Pressable>
+            style={styles.button}
+          />
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Нет аккаунта? </Text>
-            <Link href="/(auth)/register" replace style={styles.footerLink}>
-              Зарегистрироваться
+            <AppText variant="caption">Нет аккаунта? </AppText>
+            <Link href="/(auth)/register" replace>
+              <AppText variant="caption" style={{ color: colors.primary }}>
+                Зарегистрироваться
+              </AppText>
             </Link>
           </View>
         </View>
@@ -118,79 +110,17 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  flex: {
-    flex: 1,
-  },
-  forgot: {
-    alignSelf: 'flex-end',
-    marginTop: -4,
-  },
-  forgotText: {
-    fontSize: 13,
-    color: '#2563eb',
-    fontWeight: '500',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  footerLink: {
-    fontSize: 14,
-    color: '#2563eb',
-    fontWeight: '600',
-  },
+  safe: { flex: 1, backgroundColor: colors.bg },
+  flex: { flex: 1 },
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    gap: 12,
+    paddingHorizontal: spacing.xl,
+    gap: spacing.md,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#111827',
-  },
-  error: {
-    color: '#dc2626',
-    fontSize: 14,
-  },
-  button: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  title: { textAlign: 'center' },
+  subtitle: { textAlign: 'center', color: colors.muted, marginBottom: spacing.md },
+  forgot: { alignSelf: 'flex-end' },
+  button: { marginTop: spacing.sm },
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: spacing.md },
 });
