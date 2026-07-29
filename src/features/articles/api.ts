@@ -53,6 +53,21 @@ export async function fetchArticles(): Promise<ArticleListItem[]> {
   return data ?? [];
 }
 
+/** Published articles authored by a user — the profile "Статьи" section. */
+export async function fetchArticlesByAuthor(userId: string): Promise<ArticleListItem[]> {
+  const { data, error } = await supabase
+    .from('articles')
+    .select(LIST_COLUMNS)
+    .eq('Creator', userId)
+    .eq('Status', 'Опубликовано')
+    .not('slug', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 /** Fetch one published article by slug, or null. */
 export async function fetchArticleBySlug(slug: string): Promise<ArticleDetail | null> {
   const { data, error } = await supabase

@@ -4,13 +4,22 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 
 import { AppText, Card, PillButton } from '@/components/ui';
+import { fetchArticlesByAuthor, type ArticleListItem } from '@/features/articles/api';
+import { ArticleCard } from '@/features/articles/ArticleCard';
 import {
   fetchCoursesByOwner,
   fetchEnrolledCourses,
   type CourseListItem,
 } from '@/features/courses/api';
 import { CourseCard } from '@/features/courses/CourseCard';
-import { fetchProfile, publicProfileUrl, roleLabel, type Profile } from '@/features/profile/api';
+import {
+  fetchProfile,
+  publicProfileUrl,
+  roleLabel,
+  showCreated,
+  showEnrolled,
+  type Profile,
+} from '@/features/profile/api';
 import { errorMessage } from '@/lib/errors';
 import { colors, radius, spacing } from '@/theme';
 
@@ -29,6 +38,7 @@ export default function UserProfileScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [createdCourses, setCreatedCourses] = useState<CourseListItem[]>([]);
   const [enrolledCourses, setEnrolledCourses] = useState<CourseListItem[]>([]);
+  const [articles, setArticles] = useState<ArticleListItem[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,11 +62,12 @@ export default function UserProfileScreen() {
   useEffect(() => {
     let mounted = true;
     if (!id) return;
-    Promise.all([fetchCoursesByOwner(id), fetchEnrolledCourses(id)])
-      .then(([created, enrolled]) => {
+    Promise.all([fetchCoursesByOwner(id), fetchEnrolledCourses(id), fetchArticlesByAuthor(id)])
+      .then(([created, enrolled, authored]) => {
         if (!mounted) return;
         setCreatedCourses(created);
         setEnrolledCourses(enrolled);
+        setArticles(authored);
       })
       .catch(() => {});
     return () => {
@@ -66,6 +77,9 @@ export default function UserProfileScreen() {
 
   const openCourse = (course: CourseListItem) => {
     if (course.slug) router.push(`/course/${course.slug}`);
+  };
+  const openArticle = (article: ArticleListItem) => {
+    if (article.slug) router.push(`/article/${article.slug}`);
   };
 
   async function share() {
@@ -159,7 +173,7 @@ export default function UserProfileScreen() {
         />
       ) : null}
 
-      {createdCourses.length > 0 ? (
+      {showCreated(profile.hide) && createdCourses.length > 0 ? (
         <View style={styles.section}>
           <AppText variant="title">Созданные курсы</AppText>
           {createdCourses.map((c) => (
@@ -168,11 +182,20 @@ export default function UserProfileScreen() {
         </View>
       ) : null}
 
-      {enrolledCourses.length > 0 ? (
+      {showEnrolled(profile.hide) && enrolledCourses.length > 0 ? (
         <View style={styles.section}>
           <AppText variant="title">Пройденные курсы</AppText>
           {enrolledCourses.map((c) => (
             <CourseCard key={c.id} course={c} onPress={openCourse} />
+          ))}
+        </View>
+      ) : null}
+
+      {articles.length > 0 ? (
+        <View style={styles.section}>
+          <AppText variant="title">Статьи</AppText>
+          {articles.map((a) => (
+            <ArticleCard key={a.id} article={a} onPress={openArticle} />
           ))}
         </View>
       ) : null}

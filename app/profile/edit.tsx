@@ -10,6 +10,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   View,
 } from 'react-native';
 
@@ -17,7 +18,10 @@ import { AppText, Card, PillButton, TextField } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
   fetchProfile,
+  showCreated,
+  showEnrolled,
   updateProfile,
+  updateProfileVisibility,
   uploadAvatar,
   type ProfilePatch,
 } from '@/features/profile/api';
@@ -73,6 +77,8 @@ export default function EditProfileScreen() {
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [showCreatedCourses, setShowCreatedCourses] = useState(true);
+  const [showEnrolledCourses, setShowEnrolledCourses] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -94,6 +100,8 @@ export default function EditProfileScreen() {
           booking_url: profile.booking_url ?? '',
         });
         setPhoto(profile.Photo ?? null);
+        setShowCreatedCourses(showCreated(profile.hide));
+        setShowEnrolledCourses(showEnrolled(profile.hide));
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -102,6 +110,15 @@ export default function EditProfileScreen() {
       mounted = false;
     };
   }, [user]);
+
+  async function persistVisibility(nextCreated: boolean, nextEnrolled: boolean) {
+    if (!user) return;
+    try {
+      await updateProfileVisibility(user.id, { my: !nextCreated, buy: !nextEnrolled });
+    } catch (e) {
+      Alert.alert('Ошибка', errorMessage(e, 'Не удалось сохранить настройку.'));
+    }
+  }
 
   function setField(key: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -236,6 +253,36 @@ export default function EditProfileScreen() {
           />
         ))}
 
+        <Card style={styles.visibilityCard}>
+          <AppText variant="title">Видимость на профиле</AppText>
+          <View style={styles.switchRow}>
+            <AppText variant="bodyMedium" style={styles.switchLabel}>
+              Показывать созданные курсы
+            </AppText>
+            <Switch
+              value={showCreatedCourses}
+              onValueChange={(v) => {
+                setShowCreatedCourses(v);
+                persistVisibility(v, showEnrolledCourses);
+              }}
+              trackColor={{ true: colors.primary }}
+            />
+          </View>
+          <View style={styles.switchRow}>
+            <AppText variant="bodyMedium" style={styles.switchLabel}>
+              Показывать пройденные курсы
+            </AppText>
+            <Switch
+              value={showEnrolledCourses}
+              onValueChange={(v) => {
+                setShowEnrolledCourses(v);
+                persistVisibility(showCreatedCourses, v);
+              }}
+              trackColor={{ true: colors.primary }}
+            />
+          </View>
+        </Card>
+
         <PillButton label="Сохранить" onPress={handleSave} loading={saving} style={styles.save} />
 
         <Card style={styles.passwordSection}>
@@ -301,6 +348,20 @@ const styles = StyleSheet.create({
   },
   save: {
     marginTop: spacing.sm,
+  },
+  visibilityCard: {
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  switchLabel: {
+    flex: 1,
+    color: colors.ink,
   },
   passwordSection: {
     gap: spacing.md,

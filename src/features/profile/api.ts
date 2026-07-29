@@ -27,10 +27,19 @@ export type Profile = Pick<
   | 'youtube_url'
   | 'website_url'
   | 'booking_url'
+  | 'hide'
 >;
 
 const PROFILE_COLUMNS =
-  'id,email,Name,Photo,Description,role,username,telegram_url,whatsapp_url,vk_url,youtube_url,website_url,booking_url' as const;
+  'id,email,Name,Photo,Description,role,username,telegram_url,whatsapp_url,vk_url,youtube_url,website_url,booking_url,hide' as const;
+
+/** Public-profile visibility toggles (users.hide): my = created courses, buy = enrolled. */
+export function showCreated(hide: Profile['hide']): boolean {
+  return hide?.my !== true;
+}
+export function showEnrolled(hide: Profile['hide']): boolean {
+  return hide?.buy !== true;
+}
 
 /** Editable profile fields. */
 export type ProfilePatch = Pick<
@@ -125,6 +134,15 @@ export async function fetchMyCourses(userId: string): Promise<MyCourseItem[]> {
 /** Update editable profile fields. */
 export async function updateProfile(userId: string, patch: ProfilePatch): Promise<void> {
   const { error } = await supabase.from('users').update(patch).eq('id', userId);
+  if (error) throw error;
+}
+
+/** Update public-profile visibility toggles (users.hide {my, buy}). */
+export async function updateProfileVisibility(
+  userId: string,
+  hide: { my: boolean; buy: boolean },
+): Promise<void> {
+  const { error } = await supabase.from('users').update({ hide }).eq('id', userId);
   if (error) throw error;
 }
 
