@@ -153,7 +153,12 @@ export default function ProfileScreen() {
         ) : (
           <View style={styles.courseList}>
             {myCourses.map((course) => (
-              <CourseCard key={course.id} course={course} onPress={openCourse} />
+              <CourseCard
+                key={course.id}
+                course={course}
+                onPress={openCourse}
+                accessUntil={course.endPeriod}
+              />
             ))}
           </View>
         )}

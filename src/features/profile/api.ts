@@ -93,21 +93,33 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
   return data;
 }
 
+/** A course in "My courses" with the user's access-expiry date. */
+export type MyCourseItem = CourseListItem & { endPeriod: string | null };
+
 /** Courses the user has access to (via user_course), newest enrollment first. */
-export async function fetchMyCourses(userId: string): Promise<CourseListItem[]> {
+export async function fetchMyCourses(userId: string): Promise<MyCourseItem[]> {
   const { data, error } = await supabase
     .from('user_course')
-    .select('course')
+    .select('course,end_period')
     .eq('user', userId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
+  const rows = data ?? [];
 
-  const ids = (data ?? [])
+  const endByCourse = new Map<string, string | null>();
+  for (const row of rows) {
+    if (row.course && !endByCourse.has(row.course)) {
+      endByCourse.set(row.course, row.end_period ?? null);
+    }
+  }
+
+  const ids = rows
     .map((row) => row.course)
     .filter((id): id is string => typeof id === 'string');
 
-  return fetchCoursesByIds(ids);
+  const courses = await fetchCoursesByIds(ids);
+  return courses.map((c) => ({ ...c, endPeriod: endByCourse.get(c.id) ?? null }));
 }
 
 /** Update editable profile fields. */

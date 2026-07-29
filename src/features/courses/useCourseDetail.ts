@@ -6,8 +6,8 @@ import {
   checkCourseAccess,
   fetchCourseBySlug,
   fetchCourseLessons,
+  fetchCourseMembership,
   fetchStudentsCount,
-  hasCourseMembership,
   type CourseDetail,
   type LessonItem,
 } from './api';
@@ -19,6 +19,8 @@ type UseCourseDetailState = {
   hasAccess: boolean;
   /** Member of the course (bought or added free) — may leave a review. */
   canReview: boolean;
+  /** The user's access-expiry date for this course (end_period), or null. */
+  accessUntil: string | null;
   notFound: boolean;
   loading: boolean;
   error: string | null;
@@ -39,6 +41,7 @@ export function useCourseDetail(slug: string | undefined): UseCourseDetailState 
   const [studentsCount, setStudentsCount] = useState(0);
   const [hasAccess, setHasAccess] = useState(false);
   const [canReview, setCanReview] = useState(false);
+  const [accessUntil, setAccessUntil] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,13 +69,16 @@ export function useCourseDetail(slug: string | undefined): UseCourseDetailState 
           fetchCourseLessons(detail.id),
           fetchStudentsCount(detail.id),
           user ? checkCourseAccess(detail.id, user.id, isFreeCourse(detail)) : Promise.resolve(false),
-          user ? hasCourseMembership(detail.id, user.id) : Promise.resolve(false),
+          user
+            ? fetchCourseMembership(detail.id, user.id)
+            : Promise.resolve({ isMember: false, endPeriod: null }),
         ]);
         if (!mounted) return;
         setLessons(courseLessons);
         setStudentsCount(students);
         setHasAccess(access);
-        setCanReview(membership);
+        setCanReview(membership.isMember);
+        setAccessUntil(membership.endPeriod);
       } catch (e) {
         if (mounted) setError(e instanceof Error ? e.message : 'Не удалось загрузить курс.');
       } finally {
@@ -102,6 +108,7 @@ export function useCourseDetail(slug: string | undefined): UseCourseDetailState 
     studentsCount,
     hasAccess,
     canReview,
+    accessUntil,
     notFound,
     loading,
     error,

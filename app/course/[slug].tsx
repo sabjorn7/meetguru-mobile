@@ -17,6 +17,7 @@ import { AppText, Card, PillButton, SegmentedTabs } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
   accessFormatLabel,
+  accessUntilLabel,
   averageRating,
   myCourseRating,
   parseReviews,
@@ -43,7 +44,7 @@ type Tab = 'lessons' | 'about';
 
 export default function CourseDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { course, lessons, studentsCount, hasAccess, canReview, notFound, loading, error, refreshAccess, reload } =
+  const { course, lessons, studentsCount, hasAccess, canReview, accessUntil, notFound, loading, error, refreshAccess, reload } =
     useCourseDetail(slug);
   const { user } = useAuth();
 
@@ -141,6 +142,7 @@ export default function CourseDetailScreen() {
   const ratingsTotal = ratingCount(course.rating);
   const materialsCount = lessons.filter((l) => (l.File ?? '').trim().length > 0).length;
   const myRating = user ? myCourseRating(course.rating, user.id) : null;
+  const accessInfo = accessUntilLabel(accessUntil);
 
   return (
     <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -197,9 +199,15 @@ export default function CourseDetailScreen() {
         <Stat value={studentsCount} label={pluralStudents(studentsCount)} icon="people" />
       </Card>
 
-      <View style={styles.accessChip}>
-        <Ionicons name="time-outline" size={14} color={colors.muted} />
-        <AppText variant="caption">{accessFormatLabel(course.DurationLong)}</AppText>
+      <View style={[styles.accessChip, accessInfo?.expired && styles.accessChipExpired]}>
+        <Ionicons
+          name="time-outline"
+          size={14}
+          color={accessInfo?.expired ? colors.danger : colors.muted}
+        />
+        <AppText variant="caption" style={accessInfo?.expired ? { color: colors.danger } : undefined}>
+          {accessInfo ? accessInfo.text : accessFormatLabel(course.DurationLong)}
+        </AppText>
       </View>
 
       {!hasAccess && !isFree ? (
@@ -416,6 +424,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     paddingVertical: 7,
     paddingHorizontal: 12,
+  },
+  accessChipExpired: {
+    backgroundColor: '#fef2f2',
   },
   listCard: {
     padding: spacing.xs,

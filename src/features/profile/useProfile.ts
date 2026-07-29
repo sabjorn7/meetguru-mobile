@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth/AuthContext';
-import type { CourseListItem } from '@/features/courses/api';
 
-import { fetchMyCourses, fetchProfile, type Profile } from './api';
+
+import { fetchMyCourses, fetchProfile, type MyCourseItem, type Profile } from './api';
 
 type UseProfileState = {
   profile: Profile | null;
-  myCourses: CourseListItem[];
+  myCourses: MyCourseItem[];
   loading: boolean;
   refreshing: boolean;
   error: string | null;
@@ -17,7 +17,7 @@ type UseProfileState = {
 export function useProfile(): UseProfileState {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [myCourses, setMyCourses] = useState<CourseListItem[]>([]);
+  const [myCourses, setMyCourses] = useState<MyCourseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);

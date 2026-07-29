@@ -5,12 +5,14 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Card } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
-import { averageRating, type CourseListItem } from './api';
+import { accessUntilLabel, averageRating, type CourseListItem } from './api';
 import { resolveCourseImage } from './peertube';
 
 type Props = {
   course: CourseListItem;
   onPress: (course: CourseListItem) => void;
+  /** Access-expiry date (end_period) — shown as a badge in "My courses". */
+  accessUntil?: string | null;
 };
 
 const priceFormatter = new Intl.NumberFormat('ru-RU');
@@ -19,8 +21,9 @@ function formatPrice(value: number | null): string {
   return `${priceFormatter.format(value ?? 0)} ₽`;
 }
 
-export function CourseCard({ course, onPress }: Props) {
+export function CourseCard({ course, onPress, accessUntil }: Props) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const access = accessUntil ? accessUntilLabel(accessUntil) : null;
 
   useEffect(() => {
     let mounted = true;
@@ -87,6 +90,22 @@ export function CourseCard({ course, onPress }: Props) {
               </View>
             ) : null}
           </View>
+
+          {access ? (
+            <View style={styles.access}>
+              <Ionicons
+                name="time-outline"
+                size={13}
+                color={access.expired ? colors.danger : colors.muted}
+              />
+              <AppText
+                variant="caption"
+                style={{ color: access.expired ? colors.danger : colors.muted }}
+              >
+                {access.text}
+              </AppText>
+            </View>
+          ) : null}
         </View>
       </Card>
     </Pressable>
@@ -154,5 +173,11 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     color: colors.ink,
+  },
+  access: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
   },
 });

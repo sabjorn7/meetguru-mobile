@@ -240,21 +240,43 @@ export async function submitCourseReview(
 }
 
 /**
- * Whether the user is a member of the course — has a `user_course` row (bought,
- * or added a free course). Unlike `checkCourseAccess`, free courses do NOT count
- * without a row. Used to gate leaving a review (parity with the website).
+ * The user's membership of a course — a `user_course` row (bought, or added a
+ * free course), plus its access-expiry date (`end_period`, may be null). Unlike
+ * `checkCourseAccess`, free courses do NOT count without a row. Gates reviews and
+ * provides the "access until" date.
  */
-export async function hasCourseMembership(courseId: string, userId: string): Promise<boolean> {
+export async function fetchCourseMembership(
+  courseId: string,
+  userId: string,
+): Promise<{ isMember: boolean; endPeriod: string | null }> {
   const { data, error } = await supabase
     .from('user_course')
-    .select('id')
+    .select('id,end_period')
     .eq('course', courseId)
     .eq('user', userId)
     .limit(1)
     .maybeSingle();
 
   if (error) throw error;
-  return data !== null;
+  return { isMember: data !== null, endPeriod: data?.end_period ?? null };
+}
+
+const accessDateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+
+/** Access-expiry label for an `end_period`, distinguishing future vs expired. */
+export function accessUntilLabel(
+  endPeriod: string | null,
+): { text: string; expired: boolean } | null {
+  if (!endPeriod) return null;
+  const date = new Date(endPeriod);
+  if (Number.isNaN(date.getTime())) return null;
+  const expired = date.getTime() < Date.now();
+  const formatted = accessDateFormatter.format(date);
+  return { text: expired ? `Доступ истёк ${formatted}` : `Доступ до ${formatted}`, expired };
 }
 
 /** Average of the `rating` jsonb array, or null when there are no ratings. */
