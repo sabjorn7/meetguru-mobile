@@ -1,20 +1,13 @@
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { CatalogFilter } from '@/components/CatalogFilter';
+import { AppText, Card, PillButton } from '@/components/ui';
 import { useCatalogFilter } from '@/components/useCatalogFilter';
 import type { ProfileListItem } from '@/features/profile/api';
 import { usePeople } from '@/features/profile/usePeople';
+import { colors, radius, spacing } from '@/theme';
 
 function PersonRow({
   person,
@@ -24,30 +17,33 @@ function PersonRow({
   onPress: (p: ProfileListItem) => void;
 }) {
   return (
-    <Pressable
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-      onPress={() => onPress(person)}
-    >
-      {person.photo ? (
-        <Image source={{ uri: person.photo }} style={styles.avatar} />
-      ) : (
-        <View style={[styles.avatar, styles.avatarFallback]}>
-          <Text style={styles.avatarInitial}>
-            {(person.name || '?')[0]?.toUpperCase() ?? '?'}
-          </Text>
+    <Pressable onPress={() => onPress(person)} style={({ pressed }) => pressed && styles.pressed}>
+      <Card style={styles.row}>
+        {person.photo ? (
+          <Image source={{ uri: person.photo }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, styles.avatarFallback]}>
+            <AppText variant="h2" style={{ color: colors.faint }}>
+              {(person.name || '?')[0]?.toUpperCase() ?? '?'}
+            </AppText>
+          </View>
+        )}
+        <View style={styles.body}>
+          <AppText variant="subtitle" numberOfLines={1}>
+            {person.name || 'Без имени'}
+          </AppText>
+          {person.role ? (
+            <AppText variant="label" style={{ color: colors.primary }}>
+              {person.role}
+            </AppText>
+          ) : null}
+          {person.description ? (
+            <AppText variant="caption" numberOfLines={2}>
+              {person.description}
+            </AppText>
+          ) : null}
         </View>
-      )}
-      <View style={styles.body}>
-        <Text style={styles.name} numberOfLines={1}>
-          {person.name || 'Без имени'}
-        </Text>
-        {person.role ? <Text style={styles.role}>{person.role}</Text> : null}
-        {person.description ? (
-          <Text style={styles.description} numberOfLines={2}>
-            {person.description}
-          </Text>
-        ) : null}
-      </View>
+      </Card>
     </Pressable>
   );
 }
@@ -71,7 +67,7 @@ export default function PeopleScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -79,10 +75,10 @@ export default function PeopleScreen() {
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{error}</Text>
-        <Pressable style={styles.retryButton} onPress={refresh}>
-          <Text style={styles.retryText}>Повторить</Text>
-        </Pressable>
+        <AppText variant="body" style={{ color: colors.danger, textAlign: 'center' }}>
+          {error}
+        </AppText>
+        <PillButton label="Повторить" onPress={refresh} style={styles.retry} />
       </View>
     );
   }
@@ -93,7 +89,9 @@ export default function PeopleScreen() {
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <PersonRow person={item} onPress={openPerson} />}
       contentContainerStyle={styles.list}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
       keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         <CatalogFilter
           query={query}
@@ -104,11 +102,14 @@ export default function PeopleScreen() {
           placeholder="Поиск по имени"
         />
       }
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />
+      }
       ListEmptyComponent={
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>Профили не найдены</Text>
+          <AppText variant="body" style={{ color: colors.muted }}>
+            Профили не найдены
+          </AppText>
         </View>
       }
     />
@@ -117,78 +118,33 @@ export default function PeopleScreen() {
 
 const styles = StyleSheet.create({
   list: {
-    padding: 16,
+    padding: spacing.lg,
     flexGrow: 1,
+    backgroundColor: colors.bg,
   },
+  pressed: { opacity: 0.85 },
   row: {
     flexDirection: 'row',
-    gap: 12,
-    paddingVertical: 4,
-  },
-  rowPressed: {
-    opacity: 0.6,
+    gap: spacing.md,
+    padding: spacing.md,
+    alignItems: 'center',
   },
   avatar: {
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: '#e5e7eb',
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
   },
-  avatarFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitial: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  body: {
-    flex: 1,
-    gap: 2,
-    justifyContent: 'center',
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  role: {
-    fontSize: 13,
-    color: '#2563eb',
-    fontWeight: '500',
-  },
-  description: {
-    fontSize: 13,
-    color: '#6b7280',
-  },
-  separator: {
-    height: 16,
-  },
+  avatarFallback: { alignItems: 'center', justifyContent: 'center' },
+  body: { flex: 1, gap: 2, justifyContent: 'center' },
+  separator: { height: spacing.md },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    gap: 12,
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: colors.bg,
   },
-  errorText: {
-    color: '#dc2626',
-    fontSize: 15,
-    textAlign: 'center',
-  },
-  emptyText: {
-    color: '#6b7280',
-    fontSize: 15,
-  },
-  retryButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-  },
-  retryText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
+  retry: { paddingHorizontal: spacing.xxl },
 });

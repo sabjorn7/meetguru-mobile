@@ -1,20 +1,14 @@
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { CatalogFilter } from '@/components/CatalogFilter';
+import { AppText, PillButton } from '@/components/ui';
 import { useCatalogFilter } from '@/components/useCatalogFilter';
 import type { ArticleListItem } from '@/features/articles/api';
 import { ArticleCard } from '@/features/articles/ArticleCard';
 import { useArticles } from '@/features/articles/useArticles';
+import { colors, spacing } from '@/theme';
 
 export default function ArticlesScreen() {
   const { articles, loading, refreshing, error, refresh } = useArticles();
@@ -37,7 +31,7 @@ export default function ArticlesScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -45,10 +39,10 @@ export default function ArticlesScreen() {
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{error}</Text>
-        <Pressable style={styles.retryButton} onPress={refresh}>
-          <Text style={styles.retryText}>Повторить</Text>
-        </Pressable>
+        <AppText variant="body" style={{ color: colors.danger, textAlign: 'center' }}>
+          {error}
+        </AppText>
+        <PillButton label="Повторить" onPress={refresh} style={styles.retry} />
       </View>
     );
   }
@@ -61,6 +55,7 @@ export default function ArticlesScreen() {
       contentContainerStyle={styles.list}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         <CatalogFilter
           query={query}
@@ -71,10 +66,14 @@ export default function ArticlesScreen() {
           placeholder="Поиск статей"
         />
       }
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />
+      }
       ListEmptyComponent={
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>Статьи не найдены</Text>
+          <AppText variant="body" style={{ color: colors.muted }}>
+            Статьи не найдены
+          </AppText>
         </View>
       }
     />
@@ -83,36 +82,18 @@ export default function ArticlesScreen() {
 
 const styles = StyleSheet.create({
   list: {
-    padding: 16,
+    padding: spacing.lg,
     flexGrow: 1,
+    backgroundColor: colors.bg,
   },
-  separator: {
-    height: 16,
-  },
+  separator: { height: spacing.lg },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    gap: 12,
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: colors.bg,
   },
-  errorText: {
-    color: '#dc2626',
-    fontSize: 15,
-    textAlign: 'center',
-  },
-  emptyText: {
-    color: '#6b7280',
-    fontSize: 15,
-  },
-  retryButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-  },
-  retryText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
+  retry: { paddingHorizontal: spacing.xxl },
 });

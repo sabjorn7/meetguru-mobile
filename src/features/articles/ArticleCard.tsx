@@ -1,4 +1,8 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
+
+import { AppText, Card } from '@/components/ui';
+import { colors, spacing } from '@/theme';
 
 import { averageArticleRating, type ArticleListItem } from './api';
 
@@ -24,85 +28,62 @@ export function ArticleCard({ article, onPress }: Props) {
   const cover = article.Image && article.Image.length > 0 ? article.Image : null;
 
   return (
-    <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-      onPress={() => onPress(article)}
-    >
-      {cover ? (
-        <Image source={{ uri: cover }} style={styles.cover} resizeMode="cover" />
-      ) : (
-        <View style={[styles.cover, styles.coverPlaceholder]}>
-          <Text style={styles.coverPlaceholderText}>MeetGuru</Text>
-        </View>
-      )}
+    <Pressable onPress={() => onPress(article)} style={({ pressed }) => pressed && styles.pressed}>
+      <Card style={styles.card} elevated>
+        {cover ? (
+          <Image source={{ uri: cover }} style={styles.cover} resizeMode="cover" />
+        ) : (
+          <View style={[styles.cover, styles.coverPlaceholder]}>
+            <AppText variant="title" style={{ color: colors.faint }}>
+              MeetGuru
+            </AppText>
+          </View>
+        )}
 
-      <View style={styles.body}>
-        {article.Category ? <Text style={styles.category}>{article.Category}</Text> : null}
-        <Text style={styles.title} numberOfLines={2}>
-          {article.Title ?? 'Без названия'}
-        </Text>
-        <View style={styles.metaRow}>
-          <Text style={styles.date}>{formatDate(article)}</Text>
-          {rating !== null ? <Text style={styles.rating}>★ {rating.toFixed(1)}</Text> : null}
+        <View style={styles.body}>
+          {article.Category ? (
+            <AppText variant="label" style={styles.category}>
+              {article.Category.toUpperCase()}
+            </AppText>
+          ) : null}
+          <AppText variant="subtitle" numberOfLines={2}>
+            {article.Title ?? 'Без названия'}
+          </AppText>
+          <View style={styles.metaRow}>
+            <AppText variant="caption" style={{ color: colors.faint }}>
+              {formatDate(article)}
+            </AppText>
+            {rating !== null ? (
+              <View style={styles.rating}>
+                <Ionicons name="star" size={13} color={colors.amber} />
+                <AppText variant="caption" style={{ color: colors.ink }}>
+                  {rating.toFixed(1)}
+                </AppText>
+              </View>
+            ) : null}
+          </View>
         </View>
-      </View>
+      </Card>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#eceef1',
-  },
-  cardPressed: {
-    opacity: 0.7,
-  },
+  pressed: { opacity: 0.85 },
+  card: { overflow: 'hidden' },
   cover: {
     width: '100%',
     aspectRatio: 16 / 9,
-    backgroundColor: '#eef2f7',
+    backgroundColor: colors.primarySoft,
   },
-  coverPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  coverPlaceholderText: {
-    color: '#9aa5b1',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  body: {
-    padding: 14,
-    gap: 6,
-  },
-  category: {
-    fontSize: 12,
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
+  coverPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  body: { padding: spacing.lg, gap: 6 },
+  category: { color: colors.primary, letterSpacing: 0.5 },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 2,
   },
-  date: {
-    fontSize: 13,
-    color: '#9ca3af',
-  },
-  rating: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#f59e0b',
-  },
+  rating: { flexDirection: 'row', alignItems: 'center', gap: 3 },
 });
