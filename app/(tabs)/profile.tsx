@@ -111,6 +111,9 @@ export default function ProfileScreen() {
         <Pressable style={styles.editButton} onPress={() => router.push('/profile/edit')}>
           <Text style={styles.editText}>Редактировать профиль</Text>
         </Pressable>
+        <Pressable style={styles.editButton} onPress={() => router.push('/downloads')}>
+          <Text style={styles.editText}>Загрузки (офлайн)</Text>
+        </Pressable>
       </View>
 
       <View style={styles.section}>

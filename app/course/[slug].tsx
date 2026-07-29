@@ -26,6 +26,7 @@ import {
 } from '@/features/courses/api';
 import { CourseReviews } from '@/features/courses/CourseReviews';
 import { useCourseDetail } from '@/features/courses/useCourseDetail';
+import { DownloadButton } from '@/features/offline/DownloadButton';
 import { PeerTubePlayer } from '@/features/video/PeerTubePlayer';
 import { errorMessage } from '@/lib/errors';
 
@@ -227,6 +228,9 @@ export default function CourseDetailScreen() {
                     {lesson.Title ?? 'Урок'}
                   </Text>
                 </View>
+                {!locked && lesson.video_id ? (
+                  <DownloadButton videoId={lesson.video_id} title={lesson.Title ?? 'Урок'} courseSlug={slug} />
+                ) : null}
                 <Text style={styles.lessonIcon}>{locked ? '🔒' : active ? '▶' : '›'}</Text>
               </Pressable>
             );

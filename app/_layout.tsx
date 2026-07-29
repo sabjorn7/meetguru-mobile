@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { usePushNotifications } from '@/features/notifications/usePushNotifications';
+import { DownloadsProvider } from '@/features/offline/DownloadsContext';
 
 function AuthGate() {
   const { session, loading } = useAuth();
@@ -42,6 +43,7 @@ function AuthGate() {
       <Stack.Screen name="course/[slug]" options={{ headerShown: true, title: 'Курс' }} />
       <Stack.Screen name="article/[slug]" options={{ headerShown: true, title: 'Статья' }} />
       <Stack.Screen name="user/[id]" options={{ headerShown: true, title: 'Профиль' }} />
+      <Stack.Screen name="downloads" options={{ headerShown: true, title: 'Загрузки' }} />
       <Stack.Screen name="chat/[id]" options={{ headerShown: true, title: 'Диалог' }} />
       <Stack.Screen
         name="chat/new"
@@ -61,8 +63,10 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <AuthGate />
-          <StatusBar style="auto" />
+          <DownloadsProvider>
+            <AuthGate />
+            <StatusBar style="auto" />
+          </DownloadsProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
