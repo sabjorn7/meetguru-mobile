@@ -62,6 +62,7 @@ async function handleDeepLink(data: unknown, router: Router) {
     chatId?: string;
     courseId?: string;
     slug?: string;
+    clubId?: string;
   };
   if (payload.type === 'chat_message' && payload.chatId) {
     router.push(`/chat/${payload.chatId}`);
@@ -76,6 +77,10 @@ async function handleDeepLink(data: unknown, router: Router) {
     router.push(`/course/${payload.slug}`);
   } else if (payload.type === 'new_article' && payload.slug) {
     router.push(`/article/${payload.slug}`);
+  } else if (payload.type === 'club_post' && payload.clubId) {
+    router.push(`/club/${payload.clubId}`);
+  } else if (payload.type === 'club_chat' && payload.clubId) {
+    router.push(`/club/${payload.clubId}?tab=chat`);
   }
 }
 

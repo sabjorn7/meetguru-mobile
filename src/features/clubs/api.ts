@@ -11,6 +11,13 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Format a timestamp as DD.MM.YY HH:mm (mirrors the site's post/chat dates). */
+export function formatClubDate(iso: string): string {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${String(d.getFullYear()).slice(2)} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 export type ClubAccessStatus = 'owner' | 'active' | 'expired' | 'none';
 
 /** A club in the "My clubs" list. */
