@@ -357,6 +357,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      subscriptions: {
+        Row: {
+          id: string;
+          subscriber: string;
+          target: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          subscriber: string;
+          target: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          subscriber?: string;
+          target?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       order: {
         Row: {
           id: string;

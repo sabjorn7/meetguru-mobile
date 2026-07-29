@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Linking, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 
 import { AppText, Card, PillButton } from '@/components/ui';
 import { fetchArticlesByAuthor, type ArticleListItem } from '@/features/articles/api';
 import { ArticleCard } from '@/features/articles/ArticleCard';
+import { useAuth } from '@/features/auth/AuthContext';
+import { findOrCreateDirectChat } from '@/features/chats/api';
 import {
   fetchCoursesByOwner,
   fetchEnrolledCourses,
@@ -20,8 +22,24 @@ import {
   showEnrolled,
   type Profile,
 } from '@/features/profile/api';
+import {
+  isSubscribableRole,
+  isSubscribed,
+  subscribe,
+  subscriberCount,
+  unsubscribe,
+} from '@/features/subscriptions/api';
 import { errorMessage } from '@/lib/errors';
 import { colors, radius, spacing } from '@/theme';
+
+/** Russian plural for "подписчик" (1 подписчик / 2 подписчика / 5 подписчиков). */
+function pluralSubscribers(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'подписчик';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'подписчика';
+  return 'подписчиков';
+}
 
 // booking_url is surfaced as the big "Записаться" button, so it's excluded here.
 const SOCIAL_FIELDS: { key: keyof Profile; label: string }[] = [
@@ -35,6 +53,7 @@ const SOCIAL_FIELDS: { key: keyof Profile; label: string }[] = [
 export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [createdCourses, setCreatedCourses] = useState<CourseListItem[]>([]);
   const [enrolledCourses, setEnrolledCourses] = useState<CourseListItem[]>([]);
@@ -42,6 +61,14 @@ export default function UserProfileScreen() {
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [followed, setFollowed] = useState(false);
+  const [followerCount, setFollowerCount] = useState<number | null>(null);
+  const [followBusy, setFollowBusy] = useState(false);
+  const [openingChat, setOpeningChat] = useState(false);
+
+  const isSelf = !!user && user.id === id;
+  const canSubscribe = !isSelf && isSubscribableRole(profile?.role);
 
   useEffect(() => {
     let mounted = true;
@@ -74,6 +101,54 @@ export default function UserProfileScreen() {
       mounted = false;
     };
   }, [id]);
+
+  // Load follow state + follower count once the profile (and its role) is known.
+  useEffect(() => {
+    let mounted = true;
+    if (!id || isSelf || !isSubscribableRole(profile?.role)) return;
+    subscriberCount(id)
+      .then((n) => mounted && setFollowerCount(n))
+      .catch(() => {});
+    if (user) {
+      isSubscribed(user.id, id)
+        .then((v) => mounted && setFollowed(v))
+        .catch(() => {});
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [id, user, isSelf, profile?.role]);
+
+  async function toggleFollow() {
+    if (!user || !id || followBusy) return;
+    const next = !followed;
+    setFollowBusy(true);
+    setFollowed(next); // optimistic
+    setFollowerCount((c) => (c == null ? c : Math.max(0, c + (next ? 1 : -1))));
+    try {
+      if (next) await subscribe(user.id, id);
+      else await unsubscribe(user.id, id);
+    } catch (e) {
+      setFollowed(!next); // revert
+      setFollowerCount((c) => (c == null ? c : Math.max(0, c + (next ? -1 : 1))));
+      Alert.alert('Ошибка', errorMessage(e, 'Не удалось обновить подписку.'));
+    } finally {
+      setFollowBusy(false);
+    }
+  }
+
+  async function openChat() {
+    if (!user || !id || openingChat) return;
+    setOpeningChat(true);
+    try {
+      const chatId = await findOrCreateDirectChat(user.id, id);
+      router.push(`/chat/${chatId}`);
+    } catch (e) {
+      Alert.alert('Ошибка', errorMessage(e, 'Не удалось открыть чат.'));
+    } finally {
+      setOpeningChat(false);
+    }
+  }
 
   const openCourse = (course: CourseListItem) => {
     if (course.slug) router.push(`/course/${course.slug}`);
@@ -146,6 +221,11 @@ export default function UserProfileScreen() {
             {roleLabel(profile.role)}
           </AppText>
         ) : null}
+        {canSubscribe && followerCount != null ? (
+          <AppText variant="caption" style={{ color: colors.muted }}>
+            {followerCount} {pluralSubscribers(followerCount)}
+          </AppText>
+        ) : null}
 
         {profile.Description ? (
           <AppText variant="body" style={styles.description}>
@@ -165,6 +245,27 @@ export default function UserProfileScreen() {
           </View>
         ) : null}
       </Card>
+
+      {user && !isSelf ? (
+        <View style={styles.actionRow}>
+          {canSubscribe ? (
+            <PillButton
+              label={followed ? 'Вы подписаны' : 'Подписаться'}
+              variant={followed ? 'outline' : 'primary'}
+              onPress={toggleFollow}
+              loading={followBusy}
+              style={styles.actionButton}
+            />
+          ) : null}
+          <PillButton
+            label="Написать"
+            variant="outline"
+            onPress={openChat}
+            loading={openingChat}
+            style={styles.actionButton}
+          />
+        </View>
+      ) : null}
 
       {profile.booking_url ? (
         <PillButton
@@ -219,6 +320,8 @@ const styles = StyleSheet.create({
   },
   headerCard: { alignItems: 'center', gap: 4, padding: spacing.xl },
   role: { color: colors.primary, textAlign: 'center', alignSelf: 'stretch' },
+  actionRow: { flexDirection: 'row', gap: spacing.md },
+  actionButton: { flex: 1 },
   section: { gap: spacing.md },
   avatar: {
     width: 96,

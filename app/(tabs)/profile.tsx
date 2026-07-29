@@ -145,6 +145,16 @@ export default function ProfileScreen() {
           variant="outline"
           onPress={() => router.push('/downloads')}
         />
+        <PillButton
+          label="Мои подписки"
+          variant="outline"
+          onPress={() => router.push('/subscriptions?mode=following')}
+        />
+        <PillButton
+          label="Мои подписчики"
+          variant="outline"
+          onPress={() => router.push('/subscriptions?mode=followers')}
+        />
       </View>
 
       <View style={styles.section}>

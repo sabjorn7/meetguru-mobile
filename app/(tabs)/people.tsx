@@ -1,52 +1,14 @@
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { CatalogFilter } from '@/components/CatalogFilter';
-import { AppText, Card, PillButton } from '@/components/ui';
+import { AppText, PillButton } from '@/components/ui';
 import { useCatalogFilter } from '@/components/useCatalogFilter';
 import type { ProfileListItem } from '@/features/profile/api';
+import { PersonRow } from '@/features/profile/PersonRow';
 import { usePeople } from '@/features/profile/usePeople';
-import { colors, radius, spacing } from '@/theme';
-
-function PersonRow({
-  person,
-  onPress,
-}: {
-  person: ProfileListItem;
-  onPress: (p: ProfileListItem) => void;
-}) {
-  return (
-    <Pressable onPress={() => onPress(person)} style={({ pressed }) => pressed && styles.pressed}>
-      <Card style={styles.row}>
-        {person.photo ? (
-          <Image source={{ uri: person.photo }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarFallback]}>
-            <AppText variant="h2" style={{ color: colors.faint }}>
-              {(person.name || '?')[0]?.toUpperCase() ?? '?'}
-            </AppText>
-          </View>
-        )}
-        <View style={styles.body}>
-          <AppText variant="subtitle" numberOfLines={1}>
-            {person.name || 'Без имени'}
-          </AppText>
-          {person.role ? (
-            <AppText variant="label" style={{ color: colors.primary }}>
-              {person.role}
-            </AppText>
-          ) : null}
-          {person.description ? (
-            <AppText variant="caption" numberOfLines={2}>
-              {person.description}
-            </AppText>
-          ) : null}
-        </View>
-      </Card>
-    </Pressable>
-  );
-}
+import { colors, spacing } from '@/theme';
 
 export default function PeopleScreen() {
   const { people, loading, refreshing, error, refresh } = usePeople();
@@ -122,21 +84,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: colors.bg,
   },
-  pressed: { opacity: 0.85 },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    padding: spacing.md,
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primarySoft,
-  },
-  avatarFallback: { alignItems: 'center', justifyContent: 'center' },
-  body: { flex: 1, gap: 2, justifyContent: 'center' },
   separator: { height: spacing.md },
   centered: {
     flex: 1,
