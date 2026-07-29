@@ -1,10 +1,12 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, StyleSheet, View } from 'react-native';
 
+import { AppText } from '@/components/ui';
 import { fetchChatMembers, type ChatMember } from '@/features/chats/api';
 import { roleLabel } from '@/features/profile/api';
 import { errorMessage } from '@/lib/errors';
+import { colors, radius, spacing } from '@/theme';
 
 export default function ChatMembersScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string; title?: string }>();
@@ -36,7 +38,11 @@ export default function ChatMembersScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: `Участники · ${members.length}` }} />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <AppText variant="caption" style={styles.error}>
+          {error}
+        </AppText>
+      ) : null}
       <FlatList
         data={members}
         keyExtractor={(item) => item.id}
@@ -46,17 +52,17 @@ export default function ChatMembersScreen() {
               <Image source={{ uri: item.photo }} style={styles.avatar} />
             ) : (
               <View style={[styles.avatar, styles.avatarFallback]}>
-                <Text style={styles.avatarInitial}>
+                <AppText variant="subtitle" style={{ color: colors.faint }}>
                   {(item.name || item.email)[0]?.toUpperCase() ?? '?'}
-                </Text>
+                </AppText>
               </View>
             )}
             <View style={styles.body}>
-              <Text style={styles.name}>{item.name || 'Без имени'}</Text>
-              <Text style={styles.sub} numberOfLines={1}>
+              <AppText variant="subtitle">{item.name || 'Без имени'}</AppText>
+              <AppText variant="caption" numberOfLines={1}>
                 {item.role ? `${roleLabel(item.role)} · ` : ''}
                 {item.email}
-              </Text>
+              </AppText>
             </View>
           </View>
         )}
@@ -69,54 +75,41 @@ export default function ChatMembersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.bg,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   avatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: '#e5e7eb',
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
   },
   avatarFallback: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitial: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
   body: {
     flex: 1,
   },
-  name: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  sub: {
-    fontSize: 13,
-    color: '#6b7280',
-  },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: colors.hairline,
     marginLeft: 76,
   },
   error: {
-    color: '#dc2626',
+    color: colors.danger,
     fontSize: 14,
     padding: 16,
   },

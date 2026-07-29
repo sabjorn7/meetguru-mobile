@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
+import { AppText } from '@/components/ui';
 import { useDownloads } from '@/features/offline/DownloadsContext';
+import { colors, radius, spacing } from '@/theme';
 
 function formatSize(bytes: number): string {
   if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} ГБ`;
@@ -19,9 +21,9 @@ export default function DownloadsScreen() {
       <Stack.Screen options={{ title: 'Загрузки' }} />
 
       {entries.length > 0 ? (
-        <Text style={styles.total}>
+        <AppText variant="caption" style={styles.total}>
           {entries.length} видео · {formatSize(totalSize)}
-        </Text>
+        </AppText>
       ) : null}
 
       <FlatList
@@ -34,19 +36,27 @@ export default function DownloadsScreen() {
             style={styles.row}
             onPress={() => item.courseSlug && router.push(`/course/${item.courseSlug}`)}
           >
-            <Ionicons name="videocam" size={22} color="#2563eb" />
+            <View style={styles.videoIcon}>
+              <Ionicons name="videocam" size={20} color={colors.primary} />
+            </View>
             <View style={styles.body}>
-              <Text style={styles.title} numberOfLines={2}>
+              <AppText variant="bodyMedium" numberOfLines={2} style={{ color: colors.ink }}>
                 {item.title}
-              </Text>
-              <Text style={styles.size}>{formatSize(item.size)}</Text>
+              </AppText>
+              <AppText variant="caption" style={{ color: colors.muted }}>
+                {formatSize(item.size)}
+              </AppText>
             </View>
             <Pressable onPress={() => remove(item.videoId)} hitSlop={10}>
-              <Ionicons name="trash-outline" size={20} color="#dc2626" />
+              <Ionicons name="trash-outline" size={20} color={colors.danger} />
             </Pressable>
           </Pressable>
         )}
-        ListEmptyComponent={<Text style={styles.emptyText}>Нет скачанных видео</Text>}
+        ListEmptyComponent={
+          <AppText variant="body" style={{ color: colors.muted }}>
+            Нет скачанных видео
+          </AppText>
+        }
       />
     </View>
   );
@@ -55,47 +65,42 @@ export default function DownloadsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
   },
   total: {
-    fontSize: 14,
-    color: '#6b7280',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 6,
+    color: colors.muted,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  videoIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   body: {
     flex: 1,
     gap: 2,
   },
-  title: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#111827',
-  },
-  size: {
-    fontSize: 13,
-    color: '#6b7280',
-  },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#e5e7eb',
-    marginLeft: 50,
+    backgroundColor: colors.hairline,
+    marginLeft: 68,
   },
   empty: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  emptyText: {
-    color: '#6b7280',
-    fontSize: 15,
+    backgroundColor: colors.bg,
   },
 });

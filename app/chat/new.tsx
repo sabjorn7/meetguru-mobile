@@ -1,17 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
 
+import { AppText, PillButton, TextField } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
   createGroupChat,
@@ -20,6 +12,7 @@ import {
   type UserSearchResult,
 } from '@/features/chats/api';
 import { errorMessage } from '@/lib/errors';
+import { colors, radius, spacing } from '@/theme';
 
 export default function NewChatScreen() {
   const { user } = useAuth();
@@ -96,35 +89,37 @@ export default function NewChatScreen() {
         <View style={styles.selectedRow}>
           {selected.map((u) => (
             <Pressable key={u.id} style={styles.selectedChip} onPress={() => toggle(u)}>
-              <Text style={styles.selectedChipText}>{u.name || u.email}</Text>
-              <Ionicons name="close" size={14} color="#2563eb" />
+              <AppText variant="label" style={{ color: colors.primary }}>
+                {u.name || u.email}
+              </AppText>
+              <Ionicons name="close" size={14} color={colors.primary} />
             </Pressable>
           ))}
         </View>
       ) : null}
 
       {isGroup ? (
-        <TextInput
-          style={styles.input}
+        <TextField
           value={groupTitle}
           onChangeText={setGroupTitle}
           placeholder="Название группы"
-          placeholderTextColor="#9ca3af"
         />
       ) : null}
 
-      <TextInput
-        style={styles.input}
+      <TextField
         value={query}
         onChangeText={setQuery}
         placeholder="Имя или email"
-        placeholderTextColor="#9ca3af"
         autoCapitalize="none"
         autoCorrect={false}
         autoFocus
       />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <AppText variant="caption" style={{ color: colors.danger }}>
+          {error}
+        </AppText>
+      ) : null}
 
       <FlatList
         data={results}
@@ -141,21 +136,21 @@ export default function NewChatScreen() {
                 <Image source={{ uri: item.photo }} style={styles.avatar} />
               ) : (
                 <View style={[styles.avatar, styles.avatarFallback]}>
-                  <Text style={styles.avatarInitial}>
+                  <AppText variant="subtitle" style={{ color: colors.faint }}>
                     {(item.name || item.email)[0]?.toUpperCase() ?? '?'}
-                  </Text>
+                  </AppText>
                 </View>
               )}
               <View style={styles.rowBody}>
-                <Text style={styles.name}>{item.name || 'Без имени'}</Text>
-                <Text style={styles.email} numberOfLines={1}>
+                <AppText variant="subtitle">{item.name || 'Без имени'}</AppText>
+                <AppText variant="caption" numberOfLines={1}>
                   {item.email}
-                </Text>
+                </AppText>
               </View>
               <Ionicons
                 name={checked ? 'checkmark-circle' : 'ellipse-outline'}
                 size={24}
-                color={checked ? '#2563eb' : '#cbd5e1'}
+                color={checked ? colors.primary : colors.hairline}
               />
             </Pressable>
           );
@@ -163,30 +158,24 @@ export default function NewChatScreen() {
         ListEmptyComponent={
           <View style={styles.hint}>
             {searching ? (
-              <ActivityIndicator />
-            ) : query.trim().length >= 2 ? (
-              <Text style={styles.muted}>Никого не найдено</Text>
+              <ActivityIndicator color={colors.primary} />
             ) : (
-              <Text style={styles.muted}>Введите имя или email (от 2 символов)</Text>
+              <AppText variant="body" style={{ color: colors.faint }}>
+                {query.trim().length >= 2
+                  ? 'Никого не найдено'
+                  : 'Введите имя или email (от 2 символов)'}
+              </AppText>
             )}
           </View>
         }
       />
 
       {selected.length > 0 ? (
-        <Pressable
-          style={[styles.createButton, opening && styles.disabled]}
+        <PillButton
+          label={isGroup ? `Создать группу (${selected.length})` : 'Написать'}
           onPress={handleCreate}
-          disabled={opening}
-        >
-          {opening ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.createText}>
-              {isGroup ? `Создать группу (${selected.length})` : 'Написать'}
-            </Text>
-          )}
-        </Pressable>
+          loading={opening}
+        />
       ) : null}
     </View>
   );
@@ -195,43 +184,29 @@ export default function NewChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 16,
-    gap: 12,
+    backgroundColor: colors.bg,
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   selectedRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
   },
   selectedChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#eff6ff',
-    borderRadius: 999,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.pill,
     paddingLeft: 12,
     paddingRight: 8,
     paddingVertical: 6,
   },
-  selectedChipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#2563eb',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#111827',
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
     paddingVertical: 10,
   },
   rowPressed: {
@@ -240,54 +215,18 @@ const styles = StyleSheet.create({
   avatar: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#e5e7eb',
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
   },
   avatarFallback: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitial: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
   rowBody: {
     flex: 1,
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  email: {
-    fontSize: 13,
-    color: '#6b7280',
   },
   hint: {
     alignItems: 'center',
     paddingTop: 40,
-  },
-  muted: {
-    fontSize: 15,
-    color: '#9ca3af',
-  },
-  error: {
-    color: '#dc2626',
-    fontSize: 14,
-  },
-  createButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  createText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
