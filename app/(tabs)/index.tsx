@@ -1,20 +1,14 @@
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { CatalogFilter } from '@/components/CatalogFilter';
+import { AppText, PillButton, PromoBanner } from '@/components/ui';
 import { useCatalogFilter } from '@/components/useCatalogFilter';
 import type { CourseListItem } from '@/features/courses/api';
 import { CourseCard } from '@/features/courses/CourseCard';
 import { useCourses } from '@/features/courses/useCourses';
+import { colors, spacing } from '@/theme';
 
 export default function CoursesScreen() {
   const { courses, loading, refreshing, error, refresh } = useCourses();
@@ -37,7 +31,7 @@ export default function CoursesScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -45,10 +39,10 @@ export default function CoursesScreen() {
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{error}</Text>
-        <Pressable style={styles.retryButton} onPress={refresh}>
-          <Text style={styles.retryText}>Повторить</Text>
-        </Pressable>
+        <AppText variant="body" style={styles.errorText}>
+          {error}
+        </AppText>
+        <PillButton label="Повторить" onPress={refresh} style={styles.retry} />
       </View>
     );
   }
@@ -61,20 +55,32 @@ export default function CoursesScreen() {
       contentContainerStyle={styles.list}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
       ListHeaderComponent={
-        <CatalogFilter
-          query={query}
-          onQuery={setQuery}
-          categories={categories}
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-          placeholder="Поиск курсов"
-        />
+        <View style={styles.header}>
+          <PromoBanner
+            title="Откройте новые знания"
+            subtitle="Курсы от практикующих экспертов"
+            icon="rocket"
+          />
+          <CatalogFilter
+            query={query}
+            onQuery={setQuery}
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+            placeholder="Поиск курсов"
+          />
+        </View>
       }
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />
+      }
       ListEmptyComponent={
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>Курсы не найдены</Text>
+          <AppText variant="body" style={styles.emptyText}>
+            Курсы не найдены
+          </AppText>
         </View>
       }
     />
@@ -83,36 +89,33 @@ export default function CoursesScreen() {
 
 const styles = StyleSheet.create({
   list: {
-    padding: 16,
+    padding: spacing.lg,
     flexGrow: 1,
+    backgroundColor: colors.bg,
+  },
+  header: {
+    gap: spacing.lg,
+    marginBottom: spacing.lg,
   },
   separator: {
-    height: 16,
+    height: spacing.lg,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    gap: 12,
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: colors.bg,
   },
   errorText: {
-    color: '#dc2626',
-    fontSize: 15,
+    color: colors.danger,
     textAlign: 'center',
   },
   emptyText: {
-    color: '#6b7280',
-    fontSize: 15,
+    color: colors.muted,
   },
-  retryButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-  },
-  retryText: {
-    color: '#fff',
-    fontWeight: '600',
+  retry: {
+    paddingHorizontal: spacing.xxl,
   },
 });

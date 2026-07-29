@@ -1,4 +1,8 @@
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, TextInput, View } from 'react-native';
+
+import { CategoryTabs } from '@/components/ui';
+import { colors, fonts, radius, spacing } from '@/theme';
 
 type Props = {
   query: string;
@@ -19,89 +23,52 @@ export function CatalogFilter({
 }: Props) {
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        value={query}
-        onChangeText={onQuery}
-        placeholder={placeholder}
-        placeholderTextColor="#9ca3af"
-        autoCapitalize="none"
-        autoCorrect={false}
-        returnKeyType="search"
-        clearButtonMode="while-editing"
-      />
+      <View style={styles.search}>
+        <Ionicons name="search" size={18} color={colors.faint} />
+        <TextInput
+          style={styles.input}
+          value={query}
+          onChangeText={onQuery}
+          placeholder={placeholder}
+          placeholderTextColor={colors.faint}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+        />
+      </View>
 
       {categories.length > 0 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}
-        >
-          <Chip
-            label="Все"
-            active={selectedCategory === null}
-            onPress={() => onSelectCategory(null)}
-          />
-          {categories.map((category) => (
-            <Chip
-              key={category}
-              label={category}
-              active={selectedCategory === category}
-              onPress={() => onSelectCategory(category)}
-            />
-          ))}
-        </ScrollView>
+        <CategoryTabs
+          categories={categories}
+          selected={selectedCategory}
+          onSelect={onSelectCategory}
+        />
       ) : null}
     </View>
   );
 }
 
-function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <TouchableOpacity
-      style={[styles.chip, active && styles.chipActive]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
-    gap: 12,
-    marginBottom: 16,
+    gap: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    height: 48,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    flex: 1,
+    fontFamily: fonts.regular,
     fontSize: 15,
-    color: '#111827',
-    backgroundColor: '#fff',
-  },
-  chips: {
-    gap: 8,
-    paddingRight: 8,
-  },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: '#f1f5f9',
-  },
-  chipActive: {
-    backgroundColor: '#2563eb',
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#475569',
-  },
-  chipTextActive: {
-    color: '#fff',
+    color: colors.ink,
   },
 });

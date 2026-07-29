@@ -1,3 +1,11 @@
+import {
+  Raleway_400Regular,
+  Raleway_500Medium,
+  Raleway_600SemiBold,
+  Raleway_700Bold,
+  Raleway_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/raleway';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -8,6 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { usePushNotifications } from '@/features/notifications/usePushNotifications';
 import { DownloadsProvider } from '@/features/offline/DownloadsContext';
+import { colors } from '@/theme';
 
 function AuthGate() {
   const { session, loading } = useAuth();
@@ -59,6 +68,22 @@ function AuthGate() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Raleway_400Regular,
+    Raleway_500Medium,
+    Raleway_600SemiBold,
+    Raleway_700Bold,
+    Raleway_800ExtraBold,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.splash}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
