@@ -1,18 +1,19 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
 
 import { RatingInput } from '@/components/RatingInput';
+import { AppText, Card, PillButton, SegmentedTabs } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
   accessFormatLabel,
@@ -29,6 +30,7 @@ import { useCourseDetail } from '@/features/courses/useCourseDetail';
 import { DownloadButton } from '@/features/offline/DownloadButton';
 import { PeerTubePlayer } from '@/features/video/PeerTubePlayer';
 import { errorMessage } from '@/lib/errors';
+import { colors, radius, spacing } from '@/theme';
 
 const WEB_ORIGIN = 'https://app.meetgu.ru';
 const priceFormatter = new Intl.NumberFormat('ru-RU');
@@ -37,23 +39,17 @@ function formatPrice(value: number | null): string {
   return `${priceFormatter.format(value ?? 0)} ₽`;
 }
 
+type Tab = 'lessons' | 'about';
+
 export default function CourseDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const {
-    course,
-    lessons,
-    studentsCount,
-    hasAccess,
-    notFound,
-    loading,
-    error,
-    refreshAccess,
-    reload,
-  } = useCourseDetail(slug);
+  const { course, lessons, studentsCount, hasAccess, notFound, loading, error, refreshAccess, reload } =
+    useCourseDetail(slug);
   const { user } = useAuth();
 
   const scrollRef = useRef<ScrollView>(null);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('lessons');
   const [reviewText, setReviewText] = useState('');
   const [submittingRating, setSubmittingRating] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -76,11 +72,11 @@ export default function CourseDetailScreen() {
 
   const handleReview = useCallback(async () => {
     if (!course || !user || submittingReview) return;
-    const text = reviewText.trim();
-    if (!text) return;
+    const t = reviewText.trim();
+    if (!t) return;
     setSubmittingReview(true);
     try {
-      await submitCourseReview(course.id, user.id, text);
+      await submitCourseReview(course.id, user.id, t);
       setReviewText('');
       reload();
     } catch (e) {
@@ -93,7 +89,6 @@ export default function CourseDetailScreen() {
   const isFree = course ? course.Free === true || (course.Price ?? 0) === 0 : false;
   const rating = course ? averageRating(course.rating) : null;
 
-  // Default the player to the course promo; a lesson tap overrides it.
   const playingVideoId = useMemo(
     () => activeVideoId ?? course?.video_id ?? null,
     [activeVideoId, course?.video_id],
@@ -108,7 +103,6 @@ export default function CourseDetailScreen() {
   const handleBuy = useCallback(async () => {
     if (!slug) return;
     await WebBrowser.openBrowserAsync(`${WEB_ORIGIN}/course/${slug}`);
-    // The purchase completes on the website; re-check access on return.
     refreshAccess();
   }, [slug, refreshAccess]);
 
@@ -116,7 +110,7 @@ export default function CourseDetailScreen() {
     return (
       <View style={styles.centered}>
         <Stack.Screen options={{ title: 'Курс' }} />
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -125,7 +119,9 @@ export default function CourseDetailScreen() {
     return (
       <View style={styles.centered}>
         <Stack.Screen options={{ title: 'Курс' }} />
-        <Text style={styles.muted}>Курс не найден</Text>
+        <AppText variant="body" style={{ color: colors.muted }}>
+          Курс не найден
+        </AppText>
       </View>
     );
   }
@@ -134,7 +130,9 @@ export default function CourseDetailScreen() {
     return (
       <View style={styles.centered}>
         <Stack.Screen options={{ title: 'Курс' }} />
-        <Text style={styles.errorText}>{error ?? 'Не удалось загрузить курс.'}</Text>
+        <AppText variant="body" style={{ color: colors.danger }}>
+          {error ?? 'Не удалось загрузить курс.'}
+        </AppText>
       </View>
     );
   }
@@ -145,143 +143,187 @@ export default function CourseDetailScreen() {
   const myRating = user ? myCourseRating(course.rating, user.id) : null;
 
   return (
-    <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
+    <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Stack.Screen options={{ title: course.Title ?? 'Курс' }} />
 
-      <PeerTubePlayer videoId={playingVideoId} />
+      <Card style={styles.playerCard} elevated>
+        <PeerTubePlayer videoId={playingVideoId} />
+      </Card>
 
-      <View style={styles.section}>
-        {course.Category ? <Text style={styles.category}>{course.Category}</Text> : null}
-        <Text style={styles.title}>{course.Title ?? 'Без названия'}</Text>
+      {course.Category ? (
+        <AppText variant="label" style={styles.category}>
+          {course.Category.toUpperCase()}
+        </AppText>
+      ) : null}
+      <AppText variant="h2">{course.Title ?? 'Без названия'}</AppText>
 
-        <View style={styles.metaRow}>
-          {isFree ? (
-            <Text style={styles.free}>Бесплатно</Text>
-          ) : (
-            <View style={styles.priceRow}>
-              <Text style={styles.price}>{formatPrice(course.Price)}</Text>
-              {course.old_price ? (
-                <Text style={styles.oldPrice}>{formatPrice(course.old_price)}</Text>
-              ) : null}
-            </View>
-          )}
-          {rating !== null ? (
-            <Text style={styles.rating}>
-              ★ {rating.toFixed(1)}
-              {ratingsTotal > 0 ? <Text style={styles.ratingCount}> · {ratingsTotal}</Text> : null}
-            </Text>
-          ) : null}
-        </View>
-
-        <View style={styles.statsRow}>
-          <Stat value={lessons.length} label={pluralLessons(lessons.length)} />
-          <Stat value={materialsCount} label={pluralMaterials(materialsCount)} />
-          <Stat value={studentsCount} label={pluralStudents(studentsCount)} />
-        </View>
-
-        <View style={styles.accessChip}>
-          <Text style={styles.accessChipText}>{accessFormatLabel(course.DurationLong)}</Text>
-        </View>
-
-        {!hasAccess && !isFree ? (
-          <Pressable style={styles.buyButton} onPress={handleBuy}>
-            <Text style={styles.buyText}>Купить за {formatPrice(course.Price)}</Text>
-          </Pressable>
+      <View style={styles.metaRow}>
+        {isFree ? (
+          <View style={styles.freeBadge}>
+            <AppText variant="label" style={{ color: colors.success }}>
+              Бесплатно
+            </AppText>
+          </View>
+        ) : (
+          <View style={styles.priceRow}>
+            <AppText variant="title" style={{ color: colors.primary }}>
+              {formatPrice(course.Price)}
+            </AppText>
+            {course.old_price ? (
+              <AppText variant="caption" style={styles.oldPrice}>
+                {formatPrice(course.old_price)}
+              </AppText>
+            ) : null}
+          </View>
+        )}
+        {rating !== null ? (
+          <View style={styles.ratingRow}>
+            <Ionicons name="star" size={15} color={colors.amber} />
+            <AppText variant="subtitle">{rating.toFixed(1)}</AppText>
+            {ratingsTotal > 0 ? (
+              <AppText variant="caption" style={{ color: colors.faint }}>
+                ({ratingsTotal})
+              </AppText>
+            ) : null}
+          </View>
         ) : null}
       </View>
 
-      {course.Decription ? (
-        <Section title="Описание">
-          <Text style={styles.body}>{course.Decription}</Text>
-        </Section>
+      <Card style={styles.statsCard} elevated={false}>
+        <Stat value={lessons.length} label={pluralLessons(lessons.length)} icon="play-circle" />
+        <View style={styles.statDivider} />
+        <Stat value={materialsCount} label={pluralMaterials(materialsCount)} icon="document-text" />
+        <View style={styles.statDivider} />
+        <Stat value={studentsCount} label={pluralStudents(studentsCount)} icon="people" />
+      </Card>
+
+      <View style={styles.accessChip}>
+        <Ionicons name="time-outline" size={14} color={colors.muted} />
+        <AppText variant="caption">{accessFormatLabel(course.DurationLong)}</AppText>
+      </View>
+
+      {!hasAccess && !isFree ? (
+        <PillButton label={`Купить за ${formatPrice(course.Price)}`} onPress={handleBuy} />
       ) : null}
 
-      {course.WhatTeach ? (
-        <Section title="Чему научитесь">
-          <Text style={styles.body}>{course.WhatTeach}</Text>
-        </Section>
-      ) : null}
+      <SegmentedTabs
+        options={[
+          { value: 'lessons', label: `Уроки${lessons.length ? ` (${lessons.length})` : ''}` },
+          { value: 'about', label: 'Описание' },
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
 
-      {course.For ? (
-        <Section title="Для кого">
-          <Text style={styles.body}>{course.For}</Text>
-        </Section>
-      ) : null}
-
-      <Section title={`Уроки${lessons.length ? ` · ${lessons.length}` : ''}`}>
-        {lessons.length === 0 ? (
-          <Text style={styles.muted}>Уроков пока нет</Text>
-        ) : (
-          lessons.map((lesson, index) => {
-            const locked = !hasAccess;
-            const active = lesson.video_id != null && lesson.video_id === playingVideoId;
-            return (
-              <Pressable
-                key={lesson.id}
-                style={[styles.lessonRow, active && styles.lessonRowActive]}
-                onPress={() => (locked ? undefined : playLesson(lesson))}
-                disabled={locked || !lesson.video_id}
-              >
-                <Text style={styles.lessonIndex}>{index + 1}</Text>
-                <View style={styles.lessonBody}>
-                  <Text style={styles.lessonTitle} numberOfLines={2}>
-                    {lesson.Title ?? 'Урок'}
-                  </Text>
+      {tab === 'lessons' ? (
+        <Card style={styles.listCard} elevated>
+          {lessons.length === 0 ? (
+            <AppText variant="body" style={{ color: colors.muted }}>
+              Уроков пока нет
+            </AppText>
+          ) : (
+            lessons.map((lesson, index) => {
+              const locked = !hasAccess;
+              const active = lesson.video_id != null && lesson.video_id === playingVideoId;
+              return (
+                <View
+                  key={lesson.id}
+                  style={[styles.lessonRow, index > 0 && styles.lessonBorder]}
+                >
+                  <Pressable
+                    style={[
+                      styles.lessonCircle,
+                      locked ? styles.lessonCircleLocked : active && styles.lessonCircleActive,
+                    ]}
+                    onPress={() => (locked ? undefined : playLesson(lesson))}
+                    disabled={locked || !lesson.video_id}
+                  >
+                    <Ionicons
+                      name={locked ? 'lock-closed' : active ? 'pause' : 'play'}
+                      size={15}
+                      color={locked ? colors.faint : colors.white}
+                    />
+                  </Pressable>
+                  <View style={styles.lessonBody}>
+                    <AppText variant="bodyMedium" numberOfLines={2} style={{ color: colors.ink }}>
+                      {index + 1}. {lesson.Title ?? 'Урок'}
+                    </AppText>
+                  </View>
+                  {!locked && lesson.video_id ? (
+                    <DownloadButton
+                      videoId={lesson.video_id}
+                      title={lesson.Title ?? 'Урок'}
+                      courseSlug={slug}
+                    />
+                  ) : null}
                 </View>
-                {!locked && lesson.video_id ? (
-                  <DownloadButton videoId={lesson.video_id} title={lesson.Title ?? 'Урок'} courseSlug={slug} />
-                ) : null}
-                <Text style={styles.lessonIcon}>{locked ? '🔒' : active ? '▶' : '›'}</Text>
-              </Pressable>
-            );
-          })
-        )}
-      </Section>
+              );
+            })
+          )}
+        </Card>
+      ) : (
+        <View style={styles.aboutBlock}>
+          {course.Decription ? <AboutBlock title="Описание" body={course.Decription} /> : null}
+          {course.WhatTeach ? <AboutBlock title="Чему научитесь" body={course.WhatTeach} /> : null}
+          {course.For ? <AboutBlock title="Для кого" body={course.For} /> : null}
+          {!course.Decription && !course.WhatTeach && !course.For ? (
+            <AppText variant="body" style={{ color: colors.muted }}>
+              Описание пока не добавлено
+            </AppText>
+          ) : null}
+        </View>
+      )}
 
       {user ? (
-        <Section title="Ваша оценка">
+        <Card style={styles.reviewCard} elevated>
+          <AppText variant="title">Ваша оценка</AppText>
           <RatingInput value={myRating ?? 0} onChange={handleRate} disabled={submittingRating} />
           <TextInput
             style={styles.reviewInput}
             value={reviewText}
             onChangeText={setReviewText}
             placeholder="Написать отзыв…"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.faint}
             multiline
           />
-          <Pressable
-            style={[styles.submitButton, (!reviewText.trim() || submittingReview) && styles.submitDisabled]}
+          <PillButton
+            label="Отправить отзыв"
             onPress={handleReview}
-            disabled={!reviewText.trim() || submittingReview}
-          >
-            {submittingReview ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.submitText}>Отправить отзыв</Text>
-            )}
-          </Pressable>
-        </Section>
+            loading={submittingReview}
+            disabled={!reviewText.trim()}
+          />
+        </Card>
       ) : null}
 
       {reviews.length > 0 ? (
-        <Section title={`Отзывы · ${reviews.length}`}>
+        <View style={styles.reviewsSection}>
+          <AppText variant="title">Отзывы · {reviews.length}</AppText>
           <CourseReviews reviews={reviews} />
-        </Section>
+        </View>
       ) : null}
     </ScrollView>
   );
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
+function Stat({ value, label, icon }: { value: number; label: string; icon: keyof typeof Ionicons.glyphMap }) {
   return (
     <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Ionicons name={icon} size={18} color={colors.primary} />
+      <AppText variant="subtitle">{value}</AppText>
+      <AppText variant="label">{label}</AppText>
     </View>
   );
 }
 
-/** Russian plural helper: [one, few, many]. */
+function AboutBlock({ title, body }: { title: string; body: string }) {
+  return (
+    <View style={styles.aboutSection}>
+      <AppText variant="title">{title}</AppText>
+      <AppText variant="body">{body}</AppText>
+    </View>
+  );
+}
+
 function plural(n: number, forms: [string, string, string]): string {
   const mod10 = n % 10;
   const mod100 = n % 100;
@@ -294,198 +336,134 @@ const pluralLessons = (n: number) => plural(n, ['урок', 'урока', 'ур�
 const pluralMaterials = (n: number) => plural(n, ['материал', 'материала', 'материалов']);
 const pluralStudents = (n: number) => plural(n, ['ученик', 'ученика', 'учеников']);
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 32,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+    gap: spacing.md,
+    backgroundColor: colors.bg,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.xl,
+    backgroundColor: colors.bg,
   },
-  section: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    gap: 8,
+  playerCard: {
+    overflow: 'hidden',
+    padding: 0,
   },
   category: {
-    fontSize: 12,
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  body: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#374151',
+    color: colors.primary,
+    letterSpacing: 0.5,
+    marginTop: 2,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 2,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  price: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
+    gap: spacing.sm,
   },
   oldPrice: {
-    fontSize: 14,
-    color: '#9ca3af',
+    color: colors.faint,
     textDecorationLine: 'line-through',
   },
-  free: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#16a34a',
+  freeBadge: {
+    backgroundColor: '#dcfce7',
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
-  rating: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#f59e0b',
-  },
-  ratingCount: {
-    fontWeight: '400',
-    color: '#9ca3af',
-  },
-  statsRow: {
+  ratingRow: {
     flexDirection: 'row',
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: '#eceef1',
-    borderRadius: 12,
-    overflow: 'hidden',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
   },
   stat: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
-    gap: 2,
+    gap: 3,
   },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.hairline,
   },
   accessChip: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#f1f5f9',
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginTop: 10,
-  },
-  accessChipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#475569',
-  },
-  buyButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 14,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.sm,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
   },
-  buyText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  listCard: {
+    padding: spacing.xs,
   },
   lessonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e7eb',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
-  lessonRowActive: {
-    backgroundColor: '#eff6ff',
+  lessonBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.hairline,
   },
-  lessonIndex: {
-    width: 24,
-    textAlign: 'center',
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#9ca3af',
+  lessonCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lessonCircleActive: {
+    backgroundColor: colors.primaryDark,
+  },
+  lessonCircleLocked: {
+    backgroundColor: colors.primaryTint,
   },
   lessonBody: {
     flex: 1,
   },
-  lessonTitle: {
-    fontSize: 15,
-    color: '#111827',
+  aboutBlock: {
+    gap: spacing.lg,
   },
-  lessonIcon: {
-    fontSize: 16,
-    color: '#6b7280',
+  aboutSection: {
+    gap: spacing.sm,
   },
-  muted: {
-    fontSize: 15,
-    color: '#6b7280',
-  },
-  errorText: {
-    color: '#dc2626',
-    fontSize: 15,
-    textAlign: 'center',
+  reviewCard: {
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   reviewInput: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
+    borderColor: colors.border,
+    borderRadius: radius.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
+    fontFamily: 'Raleway_400Regular',
     fontSize: 15,
-    color: '#111827',
-    minHeight: 72,
+    color: colors.ink,
+    minHeight: 76,
     textAlignVertical: 'top',
-    marginTop: 8,
   },
-  submitButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  submitDisabled: {
-    opacity: 0.5,
-  },
-  submitText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
+  reviewsSection: {
+    gap: spacing.md,
+    marginTop: spacing.sm,
   },
 });

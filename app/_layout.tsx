@@ -16,7 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { usePushNotifications } from '@/features/notifications/usePushNotifications';
 import { DownloadsProvider } from '@/features/offline/DownloadsContext';
-import { colors } from '@/theme';
+import { colors, fonts } from '@/theme';
 
 function AuthGate() {
   const { session, loading } = useAuth();
@@ -46,7 +46,16 @@ function AuthGate() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        headerStyle: { backgroundColor: colors.card },
+        headerShadowVisible: false,
+        headerTintColor: colors.primary,
+        headerTitleStyle: { fontFamily: fonts.bold, fontSize: 17, color: colors.ink },
+        contentStyle: { backgroundColor: colors.bg },
+      }}
+    >
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="course/[slug]" options={{ headerShown: true, title: 'Курс' }} />
