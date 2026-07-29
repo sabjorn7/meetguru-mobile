@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { AppText, Card, TextField } from '@/components/ui';
+import { AppText, Card } from '@/components/ui';
 import { PeerTubePlayer } from '@/features/video/PeerTubePlayer';
 import { errorMessage } from '@/lib/errors';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing } from '@/theme';
 
 import {
   fetchPostComments,
@@ -185,11 +185,12 @@ export function ClubPostCard({
             ))
           )}
           <View style={styles.composer}>
-            <TextField
+            <TextInput
+              style={styles.commentInput}
               value={draft}
               onChangeText={setDraft}
               placeholder="Комментарий…"
-              style={{ flex: 1 }}
+              placeholderTextColor="#9ca3af"
               multiline
             />
             <Pressable onPress={send} disabled={sending || !draft.trim()} style={styles.send} hitSlop={8}>
@@ -252,5 +253,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
-  send: { paddingBottom: 14, paddingHorizontal: 4 },
+  commentInput: {
+    flex: 1,
+    minHeight: 40,
+    maxHeight: 100,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.ink,
+    backgroundColor: colors.white,
+  },
+  send: { paddingBottom: 8, paddingHorizontal: 4 },
 });
