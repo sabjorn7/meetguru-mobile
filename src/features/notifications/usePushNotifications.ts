@@ -57,7 +57,12 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 
 async function handleDeepLink(data: unknown, router: Router) {
   if (!data || typeof data !== 'object') return;
-  const payload = data as { type?: string; chatId?: string; courseId?: string };
+  const payload = data as {
+    type?: string;
+    chatId?: string;
+    courseId?: string;
+    slug?: string;
+  };
   if (payload.type === 'chat_message' && payload.chatId) {
     router.push(`/chat/${payload.chatId}`);
   } else if (payload.type === 'course_purchase' && payload.courseId) {
@@ -67,6 +72,10 @@ async function handleDeepLink(data: unknown, router: Router) {
     } catch {
       // ignore — the notification just won't deep-link
     }
+  } else if (payload.type === 'new_course' && payload.slug) {
+    router.push(`/course/${payload.slug}`);
+  } else if (payload.type === 'new_article' && payload.slug) {
+    router.push(`/article/${payload.slug}`);
   }
 }
 
