@@ -155,6 +155,7 @@ export default function ProfileScreen() {
           variant="outline"
           onPress={() => router.push('/subscriptions?mode=followers')}
         />
+        <PillButton label="Клубы" variant="outline" onPress={() => router.push('/clubs')} />
       </View>
 
       <View style={styles.section}>

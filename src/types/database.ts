@@ -378,6 +378,112 @@ export type Database = {
         };
         Relationships: [];
       };
+      clubs: {
+        Row: {
+          id: string;
+          created_at: string;
+          owner: string | null;
+          title: string | null;
+          short_descr: string | null;
+          descr: string | null;
+          label: string | null;
+          subs: string[] | null;
+          price: number | null;
+          active: boolean | null;
+          sub_id: string | null;
+        };
+        Insert: { id?: string; created_at?: string };
+        Update: { id?: string; created_at?: string };
+        Relationships: [];
+      };
+      club_subs: {
+        Row: {
+          id: string;
+          created_at: string;
+          club: string | null;
+          suber: string | null;
+          active: boolean | null;
+          end_date: string | null;
+          customer_phone: string | null;
+          customer_email: string | null;
+          logs: unknown | null;
+          customer_id: string | null;
+        };
+        Insert: { id?: string; created_at?: string; club: string; suber: string; active?: boolean };
+        Update: { id?: string; active?: boolean; end_date?: string | null };
+        Relationships: [];
+      };
+      club_posts: {
+        Row: {
+          id: string;
+          created_at: string;
+          club: string | null;
+          text: string | null;
+          comments: unknown | null;
+          likes: { id: string; date?: string | null }[] | null;
+          photos: string[] | null;
+          video: string | null;
+          date_send: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          club: string;
+          text?: string | null;
+          likes?: { id: string; date?: string | null }[];
+          photos?: string[] | null;
+          video?: string | null;
+          date_send?: string | null;
+        };
+        Update: {
+          id?: string;
+          text?: string | null;
+          likes?: { id: string; date?: string | null }[];
+        };
+        Relationships: [];
+      };
+      club_posts_comments: {
+        Row: {
+          id: string;
+          created_at: string;
+          text: string | null;
+          club_post: string | null;
+          onwer: string | null;
+          img: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          text: string;
+          club_post: string;
+          onwer: string;
+          img?: string | null;
+        };
+        Update: { id?: string; text?: string | null };
+        Relationships: [];
+      };
+      club_chat: {
+        Row: {
+          id: string;
+          created_at: string;
+          text: string | null;
+          img: string[] | null;
+          owner: string | null;
+          club: string | null;
+          deleted: boolean | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          text?: string | null;
+          img?: string[] | null;
+          owner: string;
+          club: string;
+          deleted?: boolean;
+        };
+        Update: { id?: string; deleted?: boolean };
+        Relationships: [];
+      };
       order: {
         Row: {
           id: string;
