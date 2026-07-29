@@ -445,6 +445,10 @@ export type Database = {
         Args: { p_chat_id: string; p_user_id: string };
         Returns: undefined;
       };
+      get_user_chats: {
+        Args: { p_user_id: string };
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
