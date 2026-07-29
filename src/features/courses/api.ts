@@ -163,6 +163,37 @@ export function accessFormatLabel(durationLong: number | null): string {
     : 'Доступ без ограничения по времени';
 }
 
+/** Published courses created (owned) by a user — the "Созданные курсы" section. */
+export async function fetchCoursesByOwner(ownerId: string): Promise<CourseListItem[]> {
+  const { data, error } = await supabase
+    .from('course')
+    .select(LIST_COLUMNS)
+    .eq('owner', ownerId)
+    .eq('ModStatus', 'Опубликовано')
+    .not('slug', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** Courses a user is enrolled in (via user_course) — the "Пройденные курсы" section. */
+export async function fetchEnrolledCourses(userId: string): Promise<CourseListItem[]> {
+  const { data, error } = await supabase
+    .from('user_course')
+    .select('course')
+    .eq('user', userId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (error) throw error;
+  const ids = (data ?? [])
+    .map((row) => row.course)
+    .filter((id): id is string => typeof id === 'string');
+  return fetchCoursesByIds(ids);
+}
+
 /** Fetch specific courses by id, preserving the given order. Used by "My courses". */
 export async function fetchCoursesByIds(ids: string[]): Promise<CourseListItem[]> {
   if (ids.length === 0) return [];

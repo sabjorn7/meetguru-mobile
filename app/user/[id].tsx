@@ -1,9 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 
 import { AppText, Card, PillButton } from '@/components/ui';
+import {
+  fetchCoursesByOwner,
+  fetchEnrolledCourses,
+  type CourseListItem,
+} from '@/features/courses/api';
+import { CourseCard } from '@/features/courses/CourseCard';
 import { fetchProfile, publicProfileUrl, roleLabel, type Profile } from '@/features/profile/api';
 import { errorMessage } from '@/lib/errors';
 import { colors, radius, spacing } from '@/theme';
@@ -19,7 +25,10 @@ const SOCIAL_FIELDS: { key: keyof Profile; label: string }[] = [
 
 export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [createdCourses, setCreatedCourses] = useState<CourseListItem[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<CourseListItem[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +48,25 @@ export default function UserProfileScreen() {
       mounted = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!id) return;
+    Promise.all([fetchCoursesByOwner(id), fetchEnrolledCourses(id)])
+      .then(([created, enrolled]) => {
+        if (!mounted) return;
+        setCreatedCourses(created);
+        setEnrolledCourses(enrolled);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
+  const openCourse = (course: CourseListItem) => {
+    if (course.slug) router.push(`/course/${course.slug}`);
+  };
 
   async function share() {
     if (!id) return;
@@ -130,6 +158,24 @@ export default function UserProfileScreen() {
           onPress={() => Linking.openURL(profile.booking_url as string)}
         />
       ) : null}
+
+      {createdCourses.length > 0 ? (
+        <View style={styles.section}>
+          <AppText variant="title">Созданные курсы</AppText>
+          {createdCourses.map((c) => (
+            <CourseCard key={c.id} course={c} onPress={openCourse} />
+          ))}
+        </View>
+      ) : null}
+
+      {enrolledCourses.length > 0 ? (
+        <View style={styles.section}>
+          <AppText variant="title">Пройденные курсы</AppText>
+          {enrolledCourses.map((c) => (
+            <CourseCard key={c.id} course={c} onPress={openCourse} />
+          ))}
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -150,6 +196,7 @@ const styles = StyleSheet.create({
   },
   headerCard: { alignItems: 'center', gap: 4, padding: spacing.xl },
   role: { color: colors.primary, textAlign: 'center', alignSelf: 'stretch' },
+  section: { gap: spacing.md },
   avatar: {
     width: 96,
     height: 96,
