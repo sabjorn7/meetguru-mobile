@@ -8,13 +8,14 @@ import {
   Pressable,
   RefreshControl,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
+import { AppText, PillButton } from '@/components/ui';
 import { deleteChat, type ChatListItem } from '@/features/chats/api';
 import { useChats } from '@/features/chats/useChats';
 import { errorMessage } from '@/lib/errors';
+import { colors, radius, spacing } from '@/theme';
 
 const timeFormatter = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' });
@@ -47,20 +48,32 @@ function ChatRow({
         <Image source={{ uri: chat.photo }} style={styles.avatar} />
       ) : (
         <View style={[styles.avatar, styles.avatarFallback]}>
-          <Text style={styles.avatarInitial}>{chat.title[0]?.toUpperCase() ?? '?'}</Text>
+          <AppText variant="subtitle" style={{ color: colors.faint }}>
+            {chat.title[0]?.toUpperCase() ?? '?'}
+          </AppText>
         </View>
       )}
       <View style={styles.rowBody}>
         <View style={styles.rowHeader}>
-          <Text style={[styles.title, chat.unread && styles.titleUnread]} numberOfLines={1}>
+          <AppText
+            variant={chat.unread ? 'subtitle' : 'bodyMedium'}
+            style={styles.title}
+            numberOfLines={1}
+          >
             {chat.title}
-          </Text>
-          <Text style={styles.when}>{formatWhen(chat.lastMessageAt)}</Text>
+          </AppText>
+          <AppText variant="label" style={{ color: colors.faint }}>
+            {formatWhen(chat.lastMessageAt)}
+          </AppText>
         </View>
         <View style={styles.rowHeader}>
-          <Text style={[styles.preview, chat.unread && styles.previewUnread]} numberOfLines={1}>
+          <AppText
+            variant="caption"
+            style={[styles.preview, chat.unread && { color: colors.ink }]}
+            numberOfLines={1}
+          >
             {chat.lastMessageText ?? 'Нет сообщений'}
-          </Text>
+          </AppText>
           {chat.unread ? <View style={styles.unreadDot} /> : null}
         </View>
       </View>
@@ -117,7 +130,7 @@ export default function ChatsScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -125,16 +138,17 @@ export default function ChatsScreen() {
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{error}</Text>
-        <Pressable style={styles.retryButton} onPress={refresh}>
-          <Text style={styles.retryText}>Повторить</Text>
-        </Pressable>
+        <AppText variant="body" style={{ color: colors.danger, textAlign: 'center' }}>
+          {error}
+        </AppText>
+        <PillButton label="Повторить" onPress={refresh} style={{ paddingHorizontal: spacing.xxl }} />
       </View>
     );
   }
 
   return (
     <FlatList
+      style={styles.list}
       data={chats}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
@@ -142,44 +156,49 @@ export default function ChatsScreen() {
       )}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       contentContainerStyle={chats.length === 0 ? styles.emptyContainer : undefined}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
-      ListEmptyComponent={<Text style={styles.emptyText}>У вас пока нет чатов</Text>}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />
+      }
+      ListEmptyComponent={
+        <AppText variant="body" style={{ color: colors.muted }}>
+          У вас пока нет чатов
+        </AppText>
+      }
     />
   );
 }
 
 const styles = StyleSheet.create({
+  list: {
+    backgroundColor: colors.card,
+  },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    gap: 12,
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: colors.bg,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   rowPressed: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bg,
   },
   avatar: {
     width: 52,
     height: 52,
-    borderRadius: 26,
-    backgroundColor: '#e5e7eb',
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
   },
   avatarFallback: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  avatarInitial: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#6b7280',
   },
   rowBody: {
     flex: 1,
@@ -189,63 +208,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: spacing.sm,
   },
   title: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  titleUnread: {
-    fontWeight: '700',
-  },
-  when: {
-    fontSize: 12,
-    color: '#9ca3af',
   },
   preview: {
     flex: 1,
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  previewUnread: {
-    color: '#111827',
-    fontWeight: '500',
   },
   unreadDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: colors.hairline,
     marginLeft: 80,
   },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  emptyText: {
-    color: '#6b7280',
-    fontSize: 15,
-  },
-  errorText: {
-    color: '#dc2626',
-    fontSize: 15,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-  },
-  retryText: {
-    color: '#fff',
-    fontWeight: '600',
+    backgroundColor: colors.bg,
   },
 });

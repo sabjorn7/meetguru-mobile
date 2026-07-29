@@ -10,11 +10,10 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from 'react-native';
 
+import { AppText, Card, PillButton, TextField } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
   fetchProfile,
@@ -23,6 +22,7 @@ import {
   type ProfilePatch,
 } from '@/features/profile/api';
 import { errorMessage } from '@/lib/errors';
+import { colors, radius, spacing } from '@/theme';
 
 type FormState = {
   Name: string;
@@ -207,83 +207,63 @@ export default function EditProfileScreen() {
             <Image source={{ uri: photo }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatar, styles.avatarFallback]}>
-              <Text style={styles.avatarInitial}>{initial}</Text>
+              <AppText variant="h1" style={{ color: colors.faint }}>
+                {initial}
+              </AppText>
             </View>
           )}
           <Pressable onPress={handlePickAvatar} disabled={uploading}>
             {uploading ? (
-              <ActivityIndicator />
+              <ActivityIndicator color={colors.primary} />
             ) : (
-              <Text style={styles.changePhoto}>Изменить фото</Text>
+              <AppText variant="subtitle" style={{ color: colors.primary }}>
+                Изменить фото
+              </AppText>
             )}
           </Pressable>
         </View>
 
         {FIELDS.map((field) => (
-          <View key={field.key} style={styles.fieldGroup}>
-            <Text style={styles.label}>{field.label}</Text>
-            <TextInput
-              style={[styles.input, field.multiline && styles.inputMultiline]}
-              value={form[field.key]}
-              onChangeText={(text) => setField(field.key, text)}
-              placeholder={field.placeholder}
-              placeholderTextColor="#9ca3af"
-              multiline={field.multiline}
-              autoCapitalize={field.key === 'Name' || field.key === 'Description' ? 'sentences' : 'none'}
-              autoCorrect={field.key === 'Name' || field.key === 'Description'}
-            />
-          </View>
+          <TextField
+            key={field.key}
+            label={field.label}
+            value={form[field.key]}
+            onChangeText={(text) => setField(field.key, text)}
+            placeholder={field.placeholder}
+            multiline={field.multiline}
+            autoCapitalize={field.key === 'Name' || field.key === 'Description' ? 'sentences' : 'none'}
+            autoCorrect={field.key === 'Name' || field.key === 'Description'}
+          />
         ))}
 
-        <Pressable
-          style={[styles.saveButton, saving && styles.disabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveText}>Сохранить</Text>
-          )}
-        </Pressable>
+        <PillButton label="Сохранить" onPress={handleSave} loading={saving} style={styles.save} />
 
-        <View style={styles.passwordSection}>
-          <Text style={styles.sectionTitle}>Смена пароля</Text>
-          <TextInput
-            style={styles.input}
+        <Card style={styles.passwordSection}>
+          <AppText variant="title">Смена пароля</AppText>
+          <TextField
             value={newPassword}
             onChangeText={setNewPassword}
             placeholder="Новый пароль (мин. 6 символов)"
-            placeholderTextColor="#9ca3af"
             secureTextEntry
             autoCapitalize="none"
             textContentType="newPassword"
           />
-          <TextInput
-            style={styles.input}
+          <TextField
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             placeholder="Повторите новый пароль"
-            placeholderTextColor="#9ca3af"
             secureTextEntry
             autoCapitalize="none"
             textContentType="newPassword"
           />
-          <Pressable
-            style={[
-              styles.passwordButton,
-              (!newPassword || !confirmPassword || changingPassword) && styles.disabled,
-            ]}
+          <PillButton
+            label="Изменить пароль"
+            variant="outline"
             onPress={handleChangePassword}
-            disabled={!newPassword || !confirmPassword || changingPassword}
-          >
-            {changingPassword ? (
-              <ActivityIndicator color="#2563eb" />
-            ) : (
-              <Text style={styles.passwordButtonText}>Изменить пароль</Text>
-            )}
-          </Pressable>
-        </View>
+            loading={changingPassword}
+            disabled={!newPassword || !confirmPassword}
+          />
+        </Card>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -292,99 +272,39 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.bg,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.bg,
   },
   content: {
-    padding: 16,
-    gap: 16,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+    gap: spacing.md,
   },
   avatarBlock: {
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   avatar: {
     width: 96,
     height: 96,
-    borderRadius: 48,
-    backgroundColor: '#e5e7eb',
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
   },
   avatarFallback: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitial: {
-    fontSize: 38,
-    fontWeight: '700',
-    color: '#6b7280',
-  },
-  changePhoto: {
-    color: '#2563eb',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  fieldGroup: {
-    gap: 6,
-  },
-  label: {
-    fontSize: 13,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#111827',
-  },
-  inputMultiline: {
-    minHeight: 88,
-    textAlignVertical: 'top',
-  },
-  saveButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  saveText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  save: {
+    marginTop: spacing.sm,
   },
   passwordSection: {
-    gap: 10,
-    marginTop: 12,
-    paddingTop: 20,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e5e7eb',
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  passwordButton: {
-    borderWidth: 1,
-    borderColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  passwordButtonText: {
-    color: '#2563eb',
-    fontSize: 15,
-    fontWeight: '600',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+    padding: spacing.lg,
   },
 });

@@ -1,20 +1,19 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
-  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   useWindowDimensions,
   View,
 } from 'react-native';
 import RenderHtml from 'react-native-render-html';
 
 import { RatingInput } from '@/components/RatingInput';
+import { AppText, Card, PillButton, TextField } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
   averageArticleRating,
@@ -26,12 +25,9 @@ import { ArticleComments } from '@/features/articles/ArticleComments';
 import { useArticleDetail } from '@/features/articles/useArticleDetail';
 import { PeerTubePlayer } from '@/features/video/PeerTubePlayer';
 import { errorMessage } from '@/lib/errors';
+import { colors, fonts, radius, spacing } from '@/theme';
 
-const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
+const dateFormatter = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 
 function formatDate(iso: string | null): string {
   if (!iso) return '';
@@ -39,19 +35,20 @@ function formatDate(iso: string | null): string {
   return Number.isNaN(parsed.getTime()) ? '' : dateFormatter.format(parsed);
 }
 
-const htmlBaseStyle = { color: '#1f2937', fontSize: 16, lineHeight: 24 };
+const htmlBaseStyle = { color: colors.body, fontSize: 16, lineHeight: 25, fontFamily: fonts.regular };
 const htmlTagStyles = {
   p: { marginTop: 0, marginBottom: 12 },
-  h3: { fontSize: 20, fontWeight: '700' as const, marginTop: 8, marginBottom: 8, color: '#111827' },
-  h4: { fontSize: 17, fontWeight: '700' as const, marginTop: 8, marginBottom: 6, color: '#111827' },
+  h3: { fontSize: 20, fontFamily: fonts.bold, marginTop: 8, marginBottom: 8, color: colors.ink },
+  h4: { fontSize: 17, fontFamily: fonts.bold, marginTop: 8, marginBottom: 6, color: colors.ink },
+  strong: { fontFamily: fonts.bold },
   blockquote: {
     borderLeftWidth: 3,
-    borderLeftColor: '#d1d5db',
+    borderLeftColor: colors.primaryTint,
     paddingLeft: 12,
     marginLeft: 0,
-    color: '#4b5563',
+    color: colors.muted,
   },
-  a: { color: '#2563eb' },
+  a: { color: colors.primary },
 };
 
 export default function ArticleDetailScreen() {
@@ -68,7 +65,6 @@ export default function ArticleDetailScreen() {
 
   const articleId = article?.id;
 
-  // Whether the user has already rated (article rating is one-time).
   useEffect(() => {
     let mounted = true;
     if (!articleId || !user) return;
@@ -118,7 +114,7 @@ export default function ArticleDetailScreen() {
     return (
       <View style={styles.centered}>
         <Stack.Screen options={{ title: 'Статья' }} />
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -127,7 +123,9 @@ export default function ArticleDetailScreen() {
     return (
       <View style={styles.centered}>
         <Stack.Screen options={{ title: 'Статья' }} />
-        <Text style={styles.muted}>Статья не найдена</Text>
+        <AppText variant="body" style={{ color: colors.muted }}>
+          Статья не найдена
+        </AppText>
       </View>
     );
   }
@@ -136,7 +134,9 @@ export default function ArticleDetailScreen() {
     return (
       <View style={styles.centered}>
         <Stack.Screen options={{ title: 'Статья' }} />
-        <Text style={styles.errorText}>{error ?? 'Не удалось загрузить статью.'}</Text>
+        <AppText variant="body" style={{ color: colors.danger }}>
+          {error ?? 'Не удалось загрузить статью.'}
+        </AppText>
       </View>
     );
   }
@@ -146,89 +146,100 @@ export default function ArticleDetailScreen() {
   const date = formatDate(article.Publish_date ?? article.created_at);
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Stack.Screen options={{ title: article.Title ?? 'Статья' }} />
 
-      {cover ? <Image source={{ uri: cover }} style={styles.cover} resizeMode="cover" /> : null}
+      {cover ? (
+        <Card style={styles.coverCard}>
+          <Image source={{ uri: cover }} style={styles.cover} resizeMode="cover" />
+        </Card>
+      ) : null}
 
-      <View style={styles.section}>
-        {article.Category ? <Text style={styles.category}>{article.Category}</Text> : null}
-        <Text style={styles.title}>{article.Title ?? 'Без названия'}</Text>
+      {article.Category ? (
+        <AppText variant="label" style={styles.category}>
+          {article.Category.toUpperCase()}
+        </AppText>
+      ) : null}
+      <AppText variant="h2">{article.Title ?? 'Без названия'}</AppText>
 
-        <View style={styles.metaRow}>
-          <Text style={styles.date}>{date}</Text>
-          {rating !== null ? <Text style={styles.rating}>★ {rating.toFixed(1)}</Text> : null}
-        </View>
-
-        {author ? (
-          <View style={styles.authorRow}>
-            {author.Photo ? (
-              <Image source={{ uri: author.Photo }} style={styles.authorAvatar} />
-            ) : (
-              <View style={[styles.authorAvatar, styles.authorAvatarFallback]}>
-                <Text style={styles.authorInitial}>
-                  {author.Name?.trim()?.[0]?.toUpperCase() ?? '?'}
-                </Text>
-              </View>
-            )}
-            <Text style={styles.authorName}>{author.Name ?? 'Автор'}</Text>
+      <View style={styles.metaRow}>
+        <AppText variant="caption" style={{ color: colors.faint }}>
+          {date}
+        </AppText>
+        {rating !== null ? (
+          <View style={styles.ratingRow}>
+            <Ionicons name="star" size={14} color={colors.amber} />
+            <AppText variant="caption" style={{ color: colors.ink }}>
+              {rating.toFixed(1)}
+            </AppText>
           </View>
         ) : null}
       </View>
 
-      {article.video_id ? <PeerTubePlayer videoId={article.video_id} /> : null}
-
-      <View style={styles.section}>
-        <RenderHtml
-          contentWidth={width - 32}
-          source={{ html: article.Content ?? '' }}
-          baseStyle={htmlBaseStyle}
-          tagsStyles={htmlTagStyles}
-          enableExperimentalMarginCollapsing
-        />
-      </View>
-
-      {user ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ваша оценка</Text>
-          {rated ? (
-            <Text style={styles.muted}>Спасибо, вы оценили статью</Text>
+      {author ? (
+        <View style={styles.authorRow}>
+          {author.Photo ? (
+            <Image source={{ uri: author.Photo }} style={styles.authorAvatar} />
           ) : (
-            <RatingInput value={ratingValue} onChange={handleRate} disabled={submittingRating} />
+            <View style={[styles.authorAvatar, styles.authorAvatarFallback]}>
+              <AppText variant="caption" style={{ color: colors.muted }}>
+                {author.Name?.trim()?.[0]?.toUpperCase() ?? '?'}
+              </AppText>
+            </View>
           )}
+          <AppText variant="caption" style={{ color: colors.body }}>
+            {author.Name ?? 'Автор'}
+          </AppText>
         </View>
       ) : null}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
+      {article.video_id ? (
+        <Card style={styles.playerCard}>
+          <PeerTubePlayer videoId={article.video_id} />
+        </Card>
+      ) : null}
+
+      <RenderHtml
+        contentWidth={width - 2 * spacing.lg}
+        source={{ html: article.Content ?? '' }}
+        baseStyle={htmlBaseStyle}
+        tagsStyles={htmlTagStyles}
+        enableExperimentalMarginCollapsing
+      />
+
+      {user ? (
+        <Card style={styles.block}>
+          <AppText variant="title">Ваша оценка</AppText>
+          {rated ? (
+            <AppText variant="body" style={{ color: colors.muted }}>
+              Спасибо, вы оценили статью
+            </AppText>
+          ) : (
+            <RatingInput value={ratingValue} onChange={handleRate} disabled={submittingRating} />
+          )}
+        </Card>
+      ) : null}
+
+      <View style={styles.commentsSection}>
+        <AppText variant="title">
           Комментарии{comments.length ? ` · ${comments.length}` : ''}
-        </Text>
+        </AppText>
         {comments.length > 0 ? <ArticleComments comments={comments} /> : null}
 
         {user ? (
           <>
-            <TextInput
-              style={styles.commentInput}
+            <TextField
+              placeholder="Написать комментарий…"
               value={commentText}
               onChangeText={setCommentText}
-              placeholder="Написать комментарий…"
-              placeholderTextColor="#9ca3af"
               multiline
             />
-            <Pressable
-              style={[
-                styles.submitButton,
-                (!commentText.trim() || submittingComment) && styles.submitDisabled,
-              ]}
+            <PillButton
+              label="Отправить"
               onPress={handleComment}
-              disabled={!commentText.trim() || submittingComment}
-            >
-              {submittingComment ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitText}>Отправить</Text>
-              )}
-            </Pressable>
+              loading={submittingComment}
+              disabled={!commentText.trim()}
+            />
           </>
         ) : null}
       </View>
@@ -238,116 +249,27 @@ export default function ArticleDetailScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 32,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+    gap: spacing.md,
+    backgroundColor: colors.bg,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.xl,
+    backgroundColor: colors.bg,
   },
-  cover: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    backgroundColor: '#eef2f7',
-  },
-  section: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    gap: 8,
-  },
-  category: {
-    fontSize: 12,
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-    lineHeight: 30,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  date: {
-    fontSize: 13,
-    color: '#9ca3af',
-  },
-  rating: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#f59e0b',
-  },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
-  },
-  authorAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#e5e7eb',
-  },
-  authorAvatarFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  authorInitial: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  authorName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  muted: {
-    fontSize: 15,
-    color: '#6b7280',
-  },
-  errorText: {
-    color: '#dc2626',
-    fontSize: 15,
-    textAlign: 'center',
-  },
-  commentInput: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-    minHeight: 72,
-    textAlignVertical: 'top',
-    marginTop: 12,
-  },
-  submitButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  submitDisabled: {
-    opacity: 0.5,
-  },
-  submitText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-  },
+  coverCard: { overflow: 'hidden', padding: 0 },
+  cover: { width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.primarySoft },
+  playerCard: { overflow: 'hidden', padding: 0 },
+  category: { color: colors.primary, letterSpacing: 0.5 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  authorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  authorAvatar: { width: 30, height: 30, borderRadius: radius.pill, backgroundColor: colors.primarySoft },
+  authorAvatarFallback: { alignItems: 'center', justifyContent: 'center' },
+  block: { padding: spacing.lg, gap: spacing.md },
+  commentsSection: { gap: spacing.md, marginTop: spacing.sm },
 });
