@@ -100,7 +100,7 @@ export default function UserProfileScreen() {
           {displayName}
         </AppText>
         {profile.role ? (
-          <AppText variant="label" style={{ color: colors.primary }}>
+          <AppText variant="caption" style={styles.role}>
             {roleLabel(profile.role)}
           </AppText>
         ) : null}
@@ -124,7 +124,12 @@ export default function UserProfileScreen() {
         ) : null}
       </Card>
 
-      <PillButton label="Поделиться профилем" onPress={share} />
+      {profile.booking_url ? (
+        <PillButton
+          label="Записаться"
+          onPress={() => Linking.openURL(profile.booking_url as string)}
+        />
+      ) : null}
     </ScrollView>
   );
 }
@@ -144,6 +149,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   headerCard: { alignItems: 'center', gap: 4, padding: spacing.xl },
+  role: { color: colors.primary, textAlign: 'center', alignSelf: 'stretch' },
   avatar: {
     width: 96,
     height: 96,

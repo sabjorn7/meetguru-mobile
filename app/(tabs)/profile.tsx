@@ -96,7 +96,7 @@ export default function ProfileScreen() {
         )}
         <AppText variant="h2">{displayName}</AppText>
         {profile?.role ? (
-          <AppText variant="label" style={{ color: colors.primary }}>
+          <AppText variant="label" style={styles.role}>
             {roleLabel(profile.role)}
           </AppText>
         ) : null}
@@ -194,6 +194,7 @@ const styles = StyleSheet.create({
     gap: 4,
     padding: spacing.xl,
   },
+  role: { color: colors.primary, textAlign: 'center', alignSelf: 'stretch' },
   avatar: {
     width: 92,
     height: 92,

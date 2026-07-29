@@ -36,9 +36,9 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.hairline,
-          height: 60,
-          paddingTop: 6,
-          paddingBottom: 8,
+          height: 68,
+          paddingTop: 8,
+          paddingBottom: 14,
         },
         headerStyle: { backgroundColor: colors.card, shadowColor: 'transparent', elevation: 0 },
         headerTitleStyle: { fontFamily: fonts.bold, fontSize: 18, color: colors.ink },
