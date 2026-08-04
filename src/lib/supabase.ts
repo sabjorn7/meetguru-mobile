@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { AppState } from 'react-native';
 
 import type { Database } from '@/types/database';
 
@@ -22,4 +23,17 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: false,
   },
+});
+
+// Drive token auto-refresh off the app's foreground state. Without this, the refresh
+// timer keeps ticking (or is starved) while the app is backgrounded; on resume the
+// access token can already be expired, the next request 401s, and supabase-js emits
+// SIGNED_OUT — i.e. the user gets silently logged out. Refresh only while active.
+// (Recommended pattern from the Supabase React Native docs.)
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    supabase.auth.startAutoRefresh();
+  } else {
+    supabase.auth.stopAutoRefresh();
+  }
 });
