@@ -601,6 +601,78 @@ export type Database = {
         };
         Relationships: [];
       };
+      streams: {
+        Row: {
+          id: string;
+          created_at: string;
+          author: string;
+          title: string;
+          description: string;
+          peertube_video_id: string | null;
+          price: number;
+          status: string;
+          scheduled_at: string | null;
+          cover_url: string | null;
+          backing_course_id: string | null;
+          access_months: number | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          author: string;
+          title: string;
+          description?: string;
+          peertube_video_id?: string | null;
+          price?: number;
+          status?: string;
+          scheduled_at?: string | null;
+          cover_url?: string | null;
+          backing_course_id?: string | null;
+          access_months?: number | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          author?: string;
+          title?: string;
+          description?: string;
+          peertube_video_id?: string | null;
+          price?: number;
+          status?: string;
+          scheduled_at?: string | null;
+          cover_url?: string | null;
+          backing_course_id?: string | null;
+          access_months?: number | null;
+        };
+        Relationships: [];
+      };
+      Peertube_System: {
+        Row: {
+          id: string;
+          created_at: string;
+          token: string | null;
+          refresh_token: string | null;
+          next_update: string | null;
+          next_refresh: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          token?: string | null;
+          refresh_token?: string | null;
+          next_update?: string | null;
+          next_refresh?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          token?: string | null;
+          refresh_token?: string | null;
+          next_update?: string | null;
+          next_refresh?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

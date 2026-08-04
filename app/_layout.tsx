@@ -66,6 +66,12 @@ function AuthGate() {
       <Stack.Screen name="subscriptions" options={{ headerShown: true, title: 'Подписки' }} />
       <Stack.Screen name="clubs" options={{ headerShown: true, title: 'Клубы' }} />
       <Stack.Screen name="club/[id]" options={{ headerShown: true, title: 'Клуб' }} />
+      <Stack.Screen name="streams/index" options={{ headerShown: true, title: 'Трансляции' }} />
+      <Stack.Screen name="streams/[id]" options={{ headerShown: true, title: 'Эфир' }} />
+      <Stack.Screen
+        name="streams/new"
+        options={{ headerShown: true, title: 'Создать эфир', presentation: 'modal' }}
+      />
       <Stack.Screen name="chat/[id]" options={{ headerShown: true, title: 'Диалог' }} />
       <Stack.Screen
         name="chat/new"
