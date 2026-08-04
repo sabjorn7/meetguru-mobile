@@ -1,3 +1,4 @@
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
@@ -12,6 +13,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText, Card, PillButton, SegmentedTabs } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -35,6 +37,8 @@ type Tab = 'posts' | 'chat';
 export default function ClubScreen() {
   const { id, tab: tabParam } = useLocalSearchParams<{ id: string; tab?: string }>();
   const { user } = useAuth();
+  const headerHeight = useHeaderHeight();
+  const insets = useSafeAreaInsets();
 
   const [club, setClub] = useState<ClubDetail | null>(null);
   const [sub, setSub] = useState<ClubSub | null>(null);
@@ -149,9 +153,10 @@ export default function ClubScreen() {
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
     >
       {screen}
-      <View style={styles.tabsBar}>
+      <View style={[styles.tabsBar, { paddingBottom: insets.bottom + spacing.sm }]}>
         <SegmentedTabs
           options={[
             { value: 'posts', label: 'Записи' },

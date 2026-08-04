@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
 import { Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, fonts } from '@/theme';
 
@@ -26,6 +27,9 @@ function tabIcon(active: IoniconName, inactive: IoniconName) {
 }
 
 export default function TabsLayout() {
+  // Edge-to-edge (Expo SDK 54) draws behind the Android system nav bar, so the tab bar
+  // must reserve the bottom safe-area inset or the system buttons overlap the tabs.
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -36,9 +40,9 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.hairline,
-          height: 68,
+          height: 60 + insets.bottom,
           paddingTop: 8,
-          paddingBottom: 14,
+          paddingBottom: insets.bottom + 6,
         },
         headerStyle: { backgroundColor: colors.card, shadowColor: 'transparent', elevation: 0 },
         headerTitleStyle: { fontFamily: fonts.bold, fontSize: 18, color: colors.ink },

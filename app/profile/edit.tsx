@@ -1,3 +1,4 @@
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Stack, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
@@ -13,6 +14,7 @@ import {
   Switch,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText, Card, PillButton, TextField } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -70,6 +72,8 @@ function orNull(value: string): string | null {
 export default function EditProfileScreen() {
   const { user, updatePassword } = useAuth();
   const router = useRouter();
+  const headerHeight = useHeaderHeight();
+  const insets = useSafeAreaInsets();
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -216,9 +220,13 @@ export default function EditProfileScreen() {
     <KeyboardAvoidingView
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
     >
       <Stack.Screen options={{ title: 'Редактирование' }} />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: spacing.xxl + insets.bottom }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.avatarBlock}>
           {photo ? (
             <Image source={{ uri: photo }} style={styles.avatar} />

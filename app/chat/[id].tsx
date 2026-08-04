@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -56,6 +57,7 @@ export default function ChatScreen() {
   const { messages, loading, error, send } = useConversation(id);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const [draft, setDraft] = useState('');
 
   // Mark this chat active so incoming pushes for it are suppressed while open.
@@ -79,8 +81,11 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
+      // Android already resizes the window for the keyboard (adjustResize); adding
+      // `padding` on top double-counts it and shoves the view up by ~2× keyboard height.
+      // Only iOS needs KeyboardAvoidingView to do the work.
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
     >
       <Stack.Screen
         options={{
