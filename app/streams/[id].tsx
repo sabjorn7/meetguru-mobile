@@ -294,7 +294,7 @@ export default function StreamDetailScreen() {
           </View>
 
           <PillButton
-            label={creds ? 'Обновить данные OBS' : 'Данные для OBS'}
+            label={creds ? 'Обновить данные эфира' : 'Данные для эфира (OBS / Larix)'}
             variant="outline"
             onPress={loadCreds}
             loading={busy && !creds}
@@ -320,7 +320,8 @@ export default function StreamDetailScreen() {
                 {revealKey ? creds.streamKey ?? '—' : '••••••••••••••••'}
               </AppText>
               <AppText variant="caption" style={{ color: colors.faint }}>
-                Удерживайте значение, чтобы скопировать. Вставьте в OBS → Настройки → Вещание.
+                Удерживайте значение, чтобы скопировать. Вставьте сервер и ключ в OBS на компьютере
+                или в мобильный вещатель (например, Larix Broadcaster).
               </AppText>
             </View>
           ) : null}

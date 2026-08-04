@@ -24,6 +24,29 @@ const DURATIONS = [
   { value: '12', label: '12 мес.' },
 ];
 
+/**
+ * Parse a "ДД.ММ.ГГГГ ЧЧ:ММ" (time optional) local-time string into an ISO string.
+ * Returns null for an empty input, or 'invalid' when the text can't be parsed.
+ */
+function parseScheduled(input: string): string | null | 'invalid' {
+  const text = input.trim();
+  if (!text) return null;
+  const m = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/);
+  if (!m) return 'invalid';
+  const [, dd, mm, yyyy, hh = '0', min = '0'] = m;
+  const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min));
+  if (
+    Number.isNaN(d.getTime()) ||
+    d.getDate() !== Number(dd) ||
+    d.getMonth() !== Number(mm) - 1 ||
+    Number(hh) > 23 ||
+    Number(min) > 59
+  ) {
+    return 'invalid';
+  }
+  return d.toISOString();
+}
+
 export default function NewStreamScreen() {
   const { user } = useAuth();
   const router = useRouter();
@@ -37,6 +60,7 @@ export default function NewStreamScreen() {
   const [paid, setPaid] = useState<'free' | 'paid'>('free');
   const [price, setPrice] = useState('');
   const [months, setMonths] = useState('3');
+  const [scheduledText, setScheduledText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const [created, setCreated] = useState<{ stream: Stream; creds: LiveCredentials } | null>(null);
@@ -67,6 +91,11 @@ export default function NewStreamScreen() {
       Alert.alert('Проверьте форму', 'Введите цену эфира.');
       return;
     }
+    const scheduledIso = parseScheduled(scheduledText);
+    if (scheduledIso === 'invalid') {
+      Alert.alert('Проверьте форму', 'Дата в формате ДД.ММ.ГГГГ ЧЧ:ММ, например 15.08.2026 19:00.');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -95,6 +124,7 @@ export default function NewStreamScreen() {
         peertube_video_id: live.video.uuid,
         access_months: accessMonths,
         backing_course_id: backingCourseId,
+        scheduled_at: scheduledIso,
       });
       if (!stream) throw new Error('Эфир создан, но строка не вернулась.');
 
@@ -143,8 +173,9 @@ export default function NewStreamScreen() {
           </AppText>
         </View>
         <AppText variant="body" style={{ color: colors.muted }}>
-          Настройте OBS по данным ниже, нажмите «Начать трансляцию» в OBS, затем откройте эфир и
-          нажмите «Я в эфире».
+          Вставьте данные ниже в OBS на компьютере или в мобильный вещатель (например, бесплатный
+          Larix Broadcaster) — сервер и ключ. Начните трансляцию в нём, затем откройте эфир и нажмите
+          «Я в эфире».
         </AppText>
 
         <Card style={styles.credsBox} elevated>
@@ -198,6 +229,14 @@ export default function NewStreamScreen() {
         onChangeText={setDescription}
         placeholder="О чём эфир (необязательно)"
         multiline
+      />
+
+      <TextField
+        label="Дата и время эфира (необязательно)"
+        value={scheduledText}
+        onChangeText={setScheduledText}
+        placeholder="15.08.2026 19:00"
+        keyboardType="numbers-and-punctuation"
       />
 
       <View style={styles.field}>
