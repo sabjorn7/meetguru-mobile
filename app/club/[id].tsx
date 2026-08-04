@@ -1,4 +1,3 @@
-import { useHeaderHeight } from '@react-navigation/elements';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
@@ -6,7 +5,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   RefreshControl,
   ScrollView,
@@ -37,8 +36,21 @@ type Tab = 'posts' | 'chat';
 export default function ClubScreen() {
   const { id, tab: tabParam } = useLocalSearchParams<{ id: string; tab?: string }>();
   const { user } = useAuth();
-  const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
+  const [kbHeight, setKbHeight] = useState(0);
+
+  // Lift content by the exact keyboard height (edge-to-edge doesn't resize the window and
+  // KeyboardAvoidingView mis-measures on Android — see the chat screen for the rationale).
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvt, (e) => setKbHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener(hideEvt, () => setKbHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const [club, setClub] = useState<ClubDetail | null>(null);
   const [sub, setSub] = useState<ClubSub | null>(null);
@@ -150,11 +162,7 @@ export default function ClubScreen() {
 
   // Subscriber / owner — tabs; compact header (no long description).
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
-    >
+    <View style={[styles.flex, { paddingBottom: kbHeight }]}>
       {screen}
       <View style={[styles.tabsBar, { paddingBottom: insets.bottom + spacing.sm }]}>
         <SegmentedTabs
@@ -208,7 +216,7 @@ export default function ClubScreen() {
       ) : (
         <ClubChat clubId={club.id} userId={user!.id} />
       )}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

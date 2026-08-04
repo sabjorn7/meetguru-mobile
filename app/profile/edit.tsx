@@ -1,4 +1,3 @@
-import { useHeaderHeight } from '@react-navigation/elements';
 import { Stack, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
@@ -6,7 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
   ScrollView,
@@ -72,8 +71,21 @@ function orNull(value: string): string | null {
 export default function EditProfileScreen() {
   const { user, updatePassword } = useAuth();
   const router = useRouter();
-  const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
+  const [kbHeight, setKbHeight] = useState(0);
+
+  // Lift content by the exact keyboard height (edge-to-edge doesn't resize the window and
+  // KeyboardAvoidingView mis-measures on Android — see the chat screen for the rationale).
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvt, (e) => setKbHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener(hideEvt, () => setKbHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -217,11 +229,7 @@ export default function EditProfileScreen() {
   const initial = form.Name.trim()[0]?.toUpperCase() ?? '?';
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
-    >
+    <View style={[styles.flex, { paddingBottom: kbHeight }]}>
       <Stack.Screen options={{ title: 'Редактирование' }} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: spacing.xxl + insets.bottom }]}
@@ -320,7 +328,7 @@ export default function EditProfileScreen() {
           />
         </Card>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

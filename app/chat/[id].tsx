@@ -1,11 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useHeaderHeight } from '@react-navigation/elements';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
   StyleSheet,
@@ -57,8 +56,23 @@ export default function ChatScreen() {
   const { messages, loading, error, send } = useConversation(id);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const [draft, setDraft] = useState('');
+  const [kbHeight, setKbHeight] = useState(0);
+
+  // Edge-to-edge (SDK 54) doesn't resize the window for the keyboard, and
+  // KeyboardAvoidingView mis-measures its own frame on Android (the input stayed
+  // partly covered no matter the offset). Drive the lift directly off the keyboard
+  // events instead — endCoordinates.height is a reliable measurement on both platforms.
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvt, (e) => setKbHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener(hideEvt, () => setKbHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   // Mark this chat active so incoming pushes for it are suppressed while open.
   useFocusEffect(
@@ -79,14 +93,7 @@ export default function ChatScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      // Android already resizes the window for the keyboard (adjustResize); adding
-      // `padding` on top double-counts it and shoves the view up by ~2× keyboard height.
-      // Only iOS needs KeyboardAvoidingView to do the work.
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
-    >
+    <View style={[styles.flex, { paddingBottom: kbHeight }]}>
       <Stack.Screen
         options={{
           title: title || 'Диалог',
@@ -145,7 +152,7 @@ export default function ChatScreen() {
           <Text style={styles.sendText}>➤</Text>
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
