@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RatingInput } from '@/components/RatingInput';
 import { AppText, Card, PillButton, SegmentedTabs } from '@/components/ui';
@@ -47,6 +48,7 @@ export default function CourseDetailScreen() {
   const { course, lessons, studentsCount, hasAccess, canReview, accessUntil, notFound, loading, error, refreshAccess, reload } =
     useCourseDetail(slug);
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const scrollRef = useRef<ScrollView>(null);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
@@ -107,6 +109,14 @@ export default function CourseDetailScreen() {
     refreshAccess();
   }, [slug, refreshAccess]);
 
+  const openMaterial = useCallback(async (url: string) => {
+    try {
+      await WebBrowser.openBrowserAsync(url);
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось открыть материал.');
+    }
+  }, []);
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -145,7 +155,11 @@ export default function CourseDetailScreen() {
   const accessInfo = accessUntilLabel(accessUntil);
 
   return (
-    <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      ref={scrollRef}
+      contentContainerStyle={[styles.content, { paddingBottom: spacing.xxl + insets.bottom }]}
+      showsVerticalScrollIndicator={false}
+    >
       <Stack.Screen options={{ title: course.Title ?? 'Курс' }} />
 
       <Card style={styles.playerCard} elevated>
@@ -210,7 +224,14 @@ export default function CourseDetailScreen() {
         </AppText>
       </View>
 
-      {!hasAccess && !isFree ? (
+      {canReview ? (
+        <View style={styles.ownedPill}>
+          <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+          <AppText variant="bodyMedium" style={{ color: colors.success }}>
+            В библиотеке
+          </AppText>
+        </View>
+      ) : !isFree ? (
         <PillButton label={`Купить за ${formatPrice(course.Price)}`} onPress={handleBuy} />
       ) : null}
 
@@ -257,6 +278,15 @@ export default function CourseDetailScreen() {
                       {index + 1}. {lesson.Title ?? 'Урок'}
                     </AppText>
                   </View>
+                  {!locked && (lesson.File ?? '').trim().length > 0 ? (
+                    <Pressable
+                      style={styles.materialButton}
+                      onPress={() => openMaterial(lesson.File!.trim())}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+                    </Pressable>
+                  ) : null}
                   {!locked && lesson.video_id ? (
                     <DownloadButton
                       videoId={lesson.video_id}
@@ -428,6 +458,16 @@ const styles = StyleSheet.create({
   accessChipExpired: {
     backgroundColor: '#fef2f2',
   },
+  ownedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: '#dcfce7',
+    borderRadius: radius.pill,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+  },
   listCard: {
     padding: spacing.xs,
   },
@@ -458,6 +498,14 @@ const styles = StyleSheet.create({
   },
   lessonBody: {
     flex: 1,
+  },
+  materialButton: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   aboutBlock: {
     gap: spacing.lg,
