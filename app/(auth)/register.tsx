@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppText, PillButton, TextField } from '@/components/ui';
+import { LEGAL_URLS, openLegal } from '@/constants/legal';
 import { useAuth } from '@/features/auth/AuthContext';
 import { errorMessage } from '@/lib/errors';
 import { colors, radius, spacing } from '@/theme';
@@ -114,6 +115,25 @@ export default function RegisterScreen() {
             style={styles.button}
           />
 
+          <AppText variant="caption" style={styles.legalNote}>
+            Регистрируясь, вы соглашаетесь с{' '}
+            <AppText
+              variant="caption"
+              style={styles.legalLink}
+              onPress={() => openLegal(LEGAL_URLS.terms)}
+            >
+              Условиями использования
+            </AppText>{' '}
+            и{' '}
+            <AppText
+              variant="caption"
+              style={styles.legalLink}
+              onPress={() => openLegal(LEGAL_URLS.privacy)}
+            >
+              Политикой конфиденциальности
+            </AppText>
+          </AppText>
+
           <View style={styles.footer}>
             <AppText variant="caption">Уже есть аккаунт? </AppText>
             <Link href="/(auth)/login" replace>
@@ -154,5 +174,7 @@ const styles = StyleSheet.create({
   roleText: { color: colors.muted },
   roleTextActive: { color: colors.white },
   button: { marginTop: spacing.sm },
+  legalNote: { textAlign: 'center', color: colors.faint, marginTop: spacing.xs },
+  legalLink: { color: colors.primary, textDecorationLine: 'underline' },
   footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: spacing.md },
 });
