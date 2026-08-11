@@ -82,7 +82,10 @@ async function handleDeepLink(data: unknown, router: Router) {
     router.push(`/club/${payload.clubId}`);
   } else if (payload.type === 'club_chat' && payload.clubId) {
     router.push(`/club/${payload.clubId}?tab=chat`);
-  } else if (payload.type === 'live_started' && payload.stream_id) {
+  } else if (
+    (payload.type === 'live_started' || payload.type === 'stream_scheduled') &&
+    payload.stream_id
+  ) {
     router.push(`/streams/${payload.stream_id}`);
   }
 }

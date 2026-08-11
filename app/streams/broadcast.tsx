@@ -7,6 +7,8 @@ import {
   Alert,
   AppState,
   type AppStateStatus,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   StyleSheet,
   View,
@@ -21,6 +23,7 @@ import {
 import { AppText, PillButton } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthContext';
 import { getStreamById, setStreamStatus, type Stream } from '@/features/streams/api';
+import { StreamChat } from '@/features/streams/StreamChat';
 import { getLiveCredentials, type LiveCredentials } from '@/features/streams/peertubeLive';
 import { errorMessage } from '@/lib/errors';
 import { colors, radius, spacing } from '@/theme';
@@ -66,6 +69,7 @@ export default function BroadcastScreen() {
   const [camera, setCamera] = useState<'front' | 'back'>('back');
   const [muted, setMuted] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [showChat, setShowChat] = useState(false);
 
   // Refs mirror state so the once-subscribed AppState listener reads current values.
   const streamRef = useRef<Stream | null>(null);
@@ -304,8 +308,44 @@ export default function BroadcastScreen() {
             {stream?.title ?? ''}
           </AppText>
         )}
-        <View style={styles.iconChip} />
+        {!ended ? (
+          <Pressable hitSlop={12} onPress={() => setShowChat((v) => !v)} style={styles.iconChip}>
+            <Ionicons
+              name={showChat ? 'chatbubbles' : 'chatbubbles-outline'}
+              size={22}
+              color={colors.white}
+            />
+          </Pressable>
+        ) : (
+          <View style={styles.iconChip} />
+        )}
       </View>
+
+      {/* Host chat: read viewer questions and reply without leaving the broadcast */}
+      {showChat && !ended && stream ? (
+        <KeyboardAvoidingView
+          style={[styles.chatOverlay, { paddingBottom: insets.bottom + spacing.sm }]}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={[styles.chatHeader, { paddingTop: insets.top + spacing.sm }]}>
+            <AppText variant="title" style={{ color: colors.white }}>
+              Чат эфира
+            </AppText>
+            <Pressable hitSlop={12} onPress={() => setShowChat(false)} style={styles.iconChip}>
+              <Ionicons name="close" size={24} color={colors.white} />
+            </Pressable>
+          </View>
+          <StreamChat
+            streamId={stream.id}
+            currentUserId={user?.id ?? null}
+            canWrite
+            variant="dark"
+            layout="scroll"
+            enabled={showChat}
+            style={styles.chatFeed}
+          />
+        </KeyboardAvoidingView>
+      ) : null}
 
       {errorText && !ended ? (
         <View style={[styles.errorBar, { top: insets.top + 56 }]}>
@@ -343,8 +383,8 @@ export default function BroadcastScreen() {
         </View>
       ) : null}
 
-      {/* Bottom controls (hidden once ended) */}
-      {!ended ? (
+      {/* Bottom controls (hidden once ended or while the chat is open) */}
+      {!ended && !showChat ? (
         <>
           <View style={[styles.controls, { paddingBottom: insets.bottom + spacing.lg }]}>
             <Pressable style={styles.sideBtn} hitSlop={8} onPress={() => setMuted((m) => !m)}>
@@ -495,4 +535,16 @@ const styles = StyleSheet.create({
     color: colors.white,
     opacity: 0.8,
   },
+  chatOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.82)',
+    paddingHorizontal: spacing.lg,
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.sm,
+  },
+  chatFeed: { flex: 1, paddingBottom: spacing.md },
 });

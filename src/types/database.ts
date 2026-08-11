@@ -646,6 +646,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      stream_chat: {
+        Row: {
+          id: string;
+          created_at: string;
+          text: string | null;
+          img: string[] | null;
+          owner: string | null;
+          stream: string;
+          deleted: boolean | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          text?: string | null;
+          img?: string[] | null;
+          owner?: string | null;
+          stream: string;
+          deleted?: boolean | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          text?: string | null;
+          img?: string[] | null;
+          owner?: string | null;
+          stream?: string;
+          deleted?: boolean | null;
+        };
+        Relationships: [];
+      };
       Peertube_System: {
         Row: {
           id: string;

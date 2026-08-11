@@ -24,6 +24,7 @@ import {
   type LiveCredentials,
   type VideoInfo,
 } from '@/features/streams/peertubeLive';
+import { StreamChat } from '@/features/streams/StreamChat';
 import { PeerTubePlayer } from '@/features/video/PeerTubePlayer';
 import { errorMessage } from '@/lib/errors';
 import { colors, radius, spacing } from '@/theme';
@@ -376,11 +377,25 @@ export default function StreamDetailScreen() {
           ) : null}
         </Card>
       ) : null}
+
+      {access ? (
+        <View style={styles.chatSection}>
+          <AppText variant="title">Чат эфира</AppText>
+          <StreamChat
+            streamId={stream.id}
+            currentUserId={user?.id ?? null}
+            canWrite
+            variant="light"
+            layout="inline"
+          />
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  chatSection: { gap: spacing.sm },
   content: {
     padding: spacing.lg,
     gap: spacing.md,
