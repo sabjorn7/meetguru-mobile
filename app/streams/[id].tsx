@@ -24,6 +24,7 @@ import {
   type LiveCredentials,
   type VideoInfo,
 } from '@/features/streams/peertubeLive';
+import { StreamChat } from '@/features/streams/StreamChat';
 import { PeerTubePlayer } from '@/features/video/PeerTubePlayer';
 import { errorMessage } from '@/lib/errors';
 import { colors, radius, spacing } from '@/theme';
@@ -101,17 +102,26 @@ export default function StreamDetailScreen() {
     load().finally(() => setLoading(false));
   }, [load]);
 
-  // While the stream isn't ended and the player has nothing to show yet, poll PeerTube so
-  // the player switches on automatically once the broadcast goes live.
+  // Poll PeerTube while the player has nothing to show yet — whether we're waiting for a live to
+  // start OR for a just-ended live's replay to finish transcoding (which takes a few minutes).
+  // Once a playlist/PUBLISHED video appears, `playable` flips and polling stops.
   const playable = info?.hasPlaylist || info?.stateId === VIDEO_STATE.PUBLISHED;
-  const shouldPoll = !!stream && stream.status !== 'ended' && !playable;
+  const shouldPoll = !!stream && !playable;
   const streamVideoId = stream?.peertube_video_id ?? null;
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (!shouldPoll || !streamVideoId) return;
+    // Backstop: stop after ~15 min so a stream that never gets a replay doesn't poll forever.
+    let attempts = 0;
+    const maxAttempts = Math.ceil((15 * 60_000) / POLL_MS);
     pollRef.current = setInterval(async () => {
+      attempts += 1;
       const vinfo = await getVideoInfo(streamVideoId);
       if (vinfo) setInfo(vinfo);
+      if (attempts >= maxAttempts && pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
     }, POLL_MS);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -208,7 +218,12 @@ export default function StreamDetailScreen() {
   } else if (playable) {
     player = <PeerTubePlayer videoId={stream.peertube_video_id} />;
   } else if (stream.status === 'ended') {
-    player = <PlayerPlaceholder icon="cloud-done-outline" text="Эфир завершён, запись обрабатывается" />;
+    player = (
+      <PlayerPlaceholder
+        icon="cloud-done-outline"
+        text="Эфир завершён. Запись обрабатывается и появится здесь автоматически через несколько минут."
+      />
+    );
   } else {
     player = <PlayerPlaceholder icon="time-outline" text="Эфир ещё не начался" />;
   }
@@ -273,6 +288,14 @@ export default function StreamDetailScreen() {
       {isAuthor ? (
         <Card style={styles.authorCard} elevated>
           <AppText variant="title">Управление эфиром</AppText>
+
+          <PillButton
+            label="Вести с телефона"
+            onPress={() => router.push(`/streams/broadcast?stream=${stream.id}`)}
+          />
+          <AppText variant="caption" style={{ color: colors.faint }}>
+            Трансляция прямо с камеры телефона. Либо используйте OBS/Larix с данными ниже.
+          </AppText>
 
           <View style={styles.controlRow}>
             {stream.status !== 'live' ? (
@@ -354,11 +377,25 @@ export default function StreamDetailScreen() {
           ) : null}
         </Card>
       ) : null}
+
+      {access ? (
+        <View style={styles.chatSection}>
+          <AppText variant="title">Чат эфира</AppText>
+          <StreamChat
+            streamId={stream.id}
+            currentUserId={user?.id ?? null}
+            canWrite
+            variant="light"
+            layout="inline"
+          />
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  chatSection: { gap: spacing.sm },
   content: {
     padding: spacing.lg,
     gap: spacing.md,

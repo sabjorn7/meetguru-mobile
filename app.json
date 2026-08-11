@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ru.meetgu.mobile"
+      "bundleIdentifier": "ru.meetgu.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Для трансляции эфиров с камеры телефона",
+        "NSMicrophoneUsageDescription": "Для звука во время трансляции эфиров"
+      }
     },
     "android": {
       "package": "ru.meetgu.mobile",

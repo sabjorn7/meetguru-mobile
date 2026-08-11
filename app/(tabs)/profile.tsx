@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { AppText, Card, PillButton } from '@/components/ui';
+import { LEGAL_URLS, openLegal } from '@/constants/legal';
 import { useAuth } from '@/features/auth/AuthContext';
 import type { CourseListItem } from '@/features/courses/api';
 import { CourseCard } from '@/features/courses/CourseCard';
@@ -198,6 +199,23 @@ export default function ProfileScreen() {
           </AppText>
         )}
       </Pressable>
+
+      <View style={styles.legal}>
+        <AppText
+          variant="caption"
+          style={styles.legalLink}
+          onPress={() => openLegal(LEGAL_URLS.privacy)}
+        >
+          Политика конфиденциальности
+        </AppText>
+        <AppText
+          variant="caption"
+          style={styles.legalLink}
+          onPress={() => openLegal(LEGAL_URLS.terms)}
+        >
+          Условия использования
+        </AppText>
+      </View>
     </ScrollView>
   );
 }
@@ -258,4 +276,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   disabled: { opacity: 0.5 },
+  legal: { alignItems: 'center', gap: spacing.xs, marginTop: spacing.md },
+  legalLink: { color: colors.muted, textDecorationLine: 'underline' },
 });
