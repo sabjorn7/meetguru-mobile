@@ -162,14 +162,6 @@ export default function ProfileScreen() {
           variant="outline"
           onPress={() => router.push('/streams')}
         />
-        {/* TEMP spike entry — dev-only, remove after the broadcast spike concludes. */}
-        {__DEV__ ? (
-          <PillButton
-            label="🔧 Spike: вещание"
-            variant="outline"
-            onPress={() => router.push('/spike-broadcast')}
-          />
-        ) : null}
       </View>
 
       <View style={styles.section}>

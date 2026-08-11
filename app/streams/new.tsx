@@ -173,10 +173,14 @@ export default function NewStreamScreen() {
           </AppText>
         </View>
         <AppText variant="body" style={{ color: colors.muted }}>
-          Вставьте данные ниже в OBS на компьютере или в мобильный вещатель (например, бесплатный
-          Larix Broadcaster) — сервер и ключ. Начните трансляцию в нём, затем откройте эфир и нажмите
-          «Я в эфире».
+          Ведите трансляцию прямо с камеры телефона — кнопка ниже. Либо используйте OBS на компьютере
+          или мобильный вещатель (Larix Broadcaster) с сервером и ключом.
         </AppText>
+
+        <PillButton
+          label="Вести с телефона"
+          onPress={() => router.replace(`/streams/broadcast?stream=${created.stream.id}`)}
+        />
 
         <Card style={styles.credsBox} elevated>
           <AppText variant="label">RTMP-сервер</AppText>
@@ -203,6 +207,7 @@ export default function NewStreamScreen() {
 
         <PillButton
           label="Открыть эфир"
+          variant="outline"
           onPress={() => router.replace(`/streams/${created.stream.id}`)}
         />
       </ScrollView>
