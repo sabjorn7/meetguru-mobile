@@ -12,8 +12,10 @@
       "bundleIdentifier": "ru.meetgu.mobile",
       "infoPlist": {
         "NSCameraUsageDescription": "Для трансляции эфиров с камеры телефона",
-        "NSMicrophoneUsageDescription": "Для звука во время трансляции эфиров"
-      }
+        "NSMicrophoneUsageDescription": "Для звука во время трансляции эфиров",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "buildNumber": "2"
     },
     "android": {
       "package": "ru.meetgu.mobile",
@@ -31,7 +33,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications"
+      "expo-notifications",
+      "./plugins/withHaishinKitNoOptimization"
     ],
     "extra": {
       "router": {},
