@@ -615,6 +615,7 @@ export type Database = {
           cover_url: string | null;
           backing_course_id: string | null;
           access_months: number | null;
+          hidden: boolean;
         };
         Insert: {
           id?: string;
@@ -629,6 +630,7 @@ export type Database = {
           cover_url?: string | null;
           backing_course_id?: string | null;
           access_months?: number | null;
+          hidden?: boolean;
         };
         Update: {
           id?: string;
@@ -643,6 +645,7 @@ export type Database = {
           cover_url?: string | null;
           backing_course_id?: string | null;
           access_months?: number | null;
+          hidden?: boolean;
         };
         Relationships: [];
       };
@@ -712,6 +715,10 @@ export type Database = {
       };
       get_user_chats: {
         Args: { p_user_id: string };
+        Returns: Json;
+      };
+      delete_stream: {
+        Args: { p_stream_id: string };
         Returns: Json;
       };
     };

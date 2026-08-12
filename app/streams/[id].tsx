@@ -160,8 +160,16 @@ export default function StreamDetailScreen() {
     if (!stream) return;
     setBusy(true);
     try {
-      await deleteStream(stream);
-      router.back();
+      const action = await deleteStream(stream);
+      if (action === 'hidden') {
+        Alert.alert(
+          'Эфир скрыт',
+          'У эфира есть купившие — они сохранят доступ к записи. Эфир убран из списков.',
+          [{ text: 'OK', onPress: () => router.back() }],
+        );
+      } else {
+        router.back();
+      }
     } catch (e) {
       Alert.alert('Ошибка', errorMessage(e, 'Не удалось удалить эфир.'));
       setBusy(false);
@@ -349,8 +357,16 @@ export default function StreamDetailScreen() {
             </View>
           ) : null}
 
-          {free ? (
-            confirmDelete ? (
+          {stream.hidden ? (
+            <AppText variant="caption" style={{ color: colors.amber, textAlign: 'center' }}>
+              Эфир скрыт — купившие сохраняют доступ к записи.
+            </AppText>
+          ) : confirmDelete ? (
+            <View style={{ gap: spacing.sm }}>
+              <AppText variant="caption" style={{ color: colors.muted, textAlign: 'center' }}>
+                Если эфир уже купили — он будет скрыт (купившие сохранят доступ), иначе удалён
+                полностью.
+              </AppText>
               <View style={styles.controlRow}>
                 <PillButton
                   label="Точно удалить"
@@ -365,16 +381,16 @@ export default function StreamDetailScreen() {
                   style={styles.controlBtn}
                 />
               </View>
-            ) : (
-              <AppText
-                variant="bodyMedium"
-                style={{ color: colors.danger, textAlign: 'center' }}
-                onPress={() => setConfirmDelete(true)}
-              >
-                Удалить эфир
-              </AppText>
-            )
-          ) : null}
+            </View>
+          ) : (
+            <AppText
+              variant="bodyMedium"
+              style={{ color: colors.danger, textAlign: 'center' }}
+              onPress={() => setConfirmDelete(true)}
+            >
+              Удалить эфир
+            </AppText>
+          )}
         </Card>
       ) : null}
 
