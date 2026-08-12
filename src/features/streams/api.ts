@@ -52,7 +52,8 @@ const STATUS_ORDER: Record<string, number> = { live: 0, scheduled: 1, ended: 2 }
 
 /** All streams for the public list, with authors, ordered live → scheduled → ended. */
 export async function listAllStreams(): Promise<Stream[]> {
-  const { data, error } = await supabase.from('streams').select('*');
+  // Soft-deleted (hidden) streams are excluded from the public browse list.
+  const { data, error } = await supabase.from('streams').select('*').eq('hidden', false);
   if (error) throw new Error(`Не удалось загрузить эфиры: ${error.message}`);
   const rows = await attachAuthors(data ?? []);
   return rows.sort(
@@ -153,19 +154,25 @@ export async function setStreamStatus(streamId: string, status: StreamStatus): P
  * Delete a FREE stream (author-only): removes its PeerTube live video, then the streams row.
  * Paid streams are refused here — a paid stream is backed by a course that may have buyers.
  */
-export async function deleteStream(stream: Stream): Promise<void> {
-  if (Number(stream.price) > 0 || stream.backing_course_id) {
-    throw new Error('Удаление платных эфиров пока недоступно.');
-  }
-  if (stream.peertube_video_id) {
+/**
+ * Delete a stream (author-only). Delegates to the `delete_stream` RPC, which enforces the guard
+ * server-side (caller must be the author via auth.uid()):
+ *   - no purchases  → full hard delete (chat, dangling carts, draft backing course, streams row)
+ *   - has purchases → soft-delete (hidden=true); buyers keep access, money/replay untouched.
+ * On a hard delete we also remove the PeerTube video (best-effort — needs the API, not the DB).
+ */
+export async function deleteStream(stream: Stream): Promise<'deleted' | 'hidden'> {
+  const { data, error } = await supabase.rpc('delete_stream', { p_stream_id: stream.id });
+  if (error) throw new Error(`Не удалось удалить эфир: ${error.message}`);
+  const result = data as { action: 'deleted' | 'hidden'; peertube_video_id: string | null };
+  if (result?.action === 'deleted' && result.peertube_video_id) {
     try {
-      await deleteLive(stream.peertube_video_id);
+      await deleteLive(result.peertube_video_id);
     } catch (e) {
       console.warn('[streams] PeerTube video delete failed:', (e as Error).message);
     }
   }
-  const { error } = await supabase.from('streams').delete().eq('id', stream.id);
-  if (error) throw new Error(`Не удалось удалить эфир: ${error.message}`);
+  return result?.action ?? 'deleted';
 }
 
 // ---------- access gate (NOT money) ----------
