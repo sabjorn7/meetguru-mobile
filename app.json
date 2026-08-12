@@ -15,7 +15,7 @@
         "NSMicrophoneUsageDescription": "Для звука во время трансляции эфиров",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "2"
+      "buildNumber": "3"
     },
     "android": {
       "package": "ru.meetgu.mobile",
