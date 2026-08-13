@@ -339,6 +339,7 @@ export default function BroadcastScreen() {
             streamId={stream.id}
             currentUserId={user?.id ?? null}
             canWrite
+            isHost
             variant="dark"
             layout="scroll"
             enabled={showChat}

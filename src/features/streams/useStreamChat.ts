@@ -1,13 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { blockUser, listBlockedUserIds } from './moderationApi';
 import { listStreamMessages, sendStreamMessage, type StreamMessage } from './streamChatApi';
 
 const POLL_MS = 4000;
 
-/** Poll a stream's chat while `enabled`, and expose a send helper. stream_chat isn't
- *  realtime-enabled, so we poll (same approach as the website). */
-export function useStreamChat(streamId: string | null, { enabled = true }: { enabled?: boolean } = {}) {
+/** Poll a stream's chat while `enabled`, and expose send/block helpers. stream_chat isn't
+ *  realtime-enabled, so we poll (same approach as the website). Messages from users the
+ *  current user has blocked are filtered out (Apple 1.2 / Google Play UGC). */
+export function useStreamChat(
+  streamId: string | null,
+  { enabled = true, currentUserId = null }: { enabled?: boolean; currentUserId?: string | null } = {},
+) {
   const [messages, setMessages] = useState<StreamMessage[]>([]);
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -35,6 +41,26 @@ export function useStreamChat(streamId: string | null, { enabled = true }: { ena
     };
   }, [streamId, enabled, refresh]);
 
+  // Load the current user's block list so their messages stay hidden across refreshes.
+  useEffect(() => {
+    if (!currentUserId) {
+      setBlockedIds(new Set());
+      return;
+    }
+    let alive = true;
+    listBlockedUserIds(currentUserId)
+      .then((ids) => alive && setBlockedIds(new Set(ids)))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [currentUserId]);
+
+  const visibleMessages = useMemo(
+    () => messages.filter((m) => !m.owner || !blockedIds.has(m.owner)),
+    [messages, blockedIds],
+  );
+
   const send = useCallback(
     async (owner: string, text: string) => {
       if (!streamId) return;
@@ -44,5 +70,14 @@ export function useStreamChat(streamId: string | null, { enabled = true }: { ena
     [streamId, refresh],
   );
 
-  return { messages, loading, error, send, refresh };
+  const block = useCallback(
+    async (userId: string) => {
+      if (!currentUserId || !userId || userId === currentUserId) return;
+      await blockUser(currentUserId, userId);
+      setBlockedIds((prev) => new Set(prev).add(userId)); // hide their messages immediately
+    },
+    [currentUserId],
+  );
+
+  return { messages: visibleMessages, loading, error, send, refresh, block };
 }

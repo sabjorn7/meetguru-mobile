@@ -679,6 +679,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_blocks: {
+        Row: {
+          blocker: string;
+          blocked: string;
+          created_at: string;
+        };
+        Insert: {
+          blocker: string;
+          blocked: string;
+          created_at?: string;
+        };
+        Update: {
+          blocker?: string;
+          blocked?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      stream_reports: {
+        Row: {
+          id: string;
+          reporter: string | null;
+          target_type: string;
+          target_id: string;
+          stream: string | null;
+          reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          reporter?: string | null;
+          target_type: string;
+          target_id: string;
+          stream?: string | null;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          reporter?: string | null;
+          target_type?: string;
+          target_id?: string;
+          stream?: string | null;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       Peertube_System: {
         Row: {
           id: string;

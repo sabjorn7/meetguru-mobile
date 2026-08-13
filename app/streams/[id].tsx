@@ -24,6 +24,7 @@ import {
   type LiveCredentials,
   type VideoInfo,
 } from '@/features/streams/peertubeLive';
+import { reportContent } from '@/features/streams/moderationApi';
 import { StreamChat } from '@/features/streams/StreamChat';
 import { PeerTubePlayer } from '@/features/video/PeerTubePlayer';
 import { errorMessage } from '@/lib/errors';
@@ -190,6 +191,30 @@ export default function StreamDetailScreen() {
       message: `${stream.title}\n${WEB_ORIGIN}/streams?stream=${stream.id}`,
     }).catch(() => {});
   }, [stream]);
+
+  const handleReportStream = useCallback(() => {
+    if (!stream || !user) return;
+    Alert.alert('Пожаловаться на эфир?', 'Мы рассмотрим жалобу в течение 24 часов.', [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Пожаловаться',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await reportContent({
+              reporter: user.id,
+              targetType: 'stream',
+              targetId: stream.id,
+              stream: stream.id,
+            });
+            Alert.alert('Жалоба отправлена', 'Спасибо. Мы рассмотрим её в течение 24 часов.');
+          } catch (e) {
+            Alert.alert('Ошибка', errorMessage(e, 'Не удалось отправить жалобу.'));
+          }
+        },
+      },
+    ]);
+  }, [stream, user]);
 
   if (loading) {
     return (
@@ -401,10 +426,21 @@ export default function StreamDetailScreen() {
             streamId={stream.id}
             currentUserId={user?.id ?? null}
             canWrite
+            isHost={isAuthor}
             variant="light"
             layout="inline"
           />
         </View>
+      ) : null}
+
+      {user && !isAuthor ? (
+        <AppText
+          variant="caption"
+          style={styles.reportLink}
+          onPress={handleReportStream}
+        >
+          Пожаловаться на эфир
+        </AppText>
       ) : null}
     </ScrollView>
   );
@@ -412,6 +448,12 @@ export default function StreamDetailScreen() {
 
 const styles = StyleSheet.create({
   chatSection: { gap: spacing.sm },
+  reportLink: {
+    color: colors.muted,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+    marginTop: spacing.lg,
+  },
   content: {
     padding: spacing.lg,
     gap: spacing.md,

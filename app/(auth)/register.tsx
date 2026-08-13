@@ -21,11 +21,12 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<string>(ROLE_OPTIONS[0].value);
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const canSubmit = email.trim().length > 0 && password.length >= 6 && !submitting;
+  const canSubmit = email.trim().length > 0 && password.length >= 6 && agreed && !submitting;
 
   async function handleRegister() {
     if (!canSubmit) return;
@@ -107,6 +108,40 @@ export default function RegisterScreen() {
             </AppText>
           ) : null}
 
+          <Pressable
+            style={styles.agreeRow}
+            onPress={() => setAgreed((v) => !v)}
+            disabled={submitting}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: agreed }}
+          >
+            <View style={[styles.checkbox, agreed && styles.checkboxOn]}>
+              {agreed ? (
+                <AppText variant="caption" style={styles.checkboxMark}>
+                  ✓
+                </AppText>
+              ) : null}
+            </View>
+            <AppText variant="caption" style={styles.agreeText}>
+              Я принимаю{' '}
+              <AppText
+                variant="caption"
+                style={styles.legalLink}
+                onPress={() => openLegal(LEGAL_URLS.terms)}
+              >
+                Условия использования
+              </AppText>{' '}
+              и{' '}
+              <AppText
+                variant="caption"
+                style={styles.legalLink}
+                onPress={() => openLegal(LEGAL_URLS.privacy)}
+              >
+                Политику конфиденциальности
+              </AppText>
+            </AppText>
+          </Pressable>
+
           <PillButton
             label="Зарегистрироваться"
             onPress={handleRegister}
@@ -114,25 +149,6 @@ export default function RegisterScreen() {
             disabled={!canSubmit}
             style={styles.button}
           />
-
-          <AppText variant="caption" style={styles.legalNote}>
-            Регистрируясь, вы соглашаетесь с{' '}
-            <AppText
-              variant="caption"
-              style={styles.legalLink}
-              onPress={() => openLegal(LEGAL_URLS.terms)}
-            >
-              Условиями использования
-            </AppText>{' '}
-            и{' '}
-            <AppText
-              variant="caption"
-              style={styles.legalLink}
-              onPress={() => openLegal(LEGAL_URLS.privacy)}
-            >
-              Политикой конфиденциальности
-            </AppText>
-          </AppText>
 
           <View style={styles.footer}>
             <AppText variant="caption">Уже есть аккаунт? </AppText>
@@ -174,7 +190,20 @@ const styles = StyleSheet.create({
   roleText: { color: colors.muted },
   roleTextActive: { color: colors.white },
   button: { marginTop: spacing.sm },
-  legalNote: { textAlign: 'center', color: colors.faint, marginTop: spacing.xs },
+  agreeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginTop: spacing.xs },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.sm,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  checkboxMark: { color: colors.white, fontWeight: '700', lineHeight: 18 },
+  agreeText: { flex: 1, color: colors.muted },
   legalLink: { color: colors.primary, textDecorationLine: 'underline' },
   footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: spacing.md },
 });
