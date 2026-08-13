@@ -63,3 +63,85 @@ index 6cf2bbd..f8f4a2a 100644
    private val requestId: Int,
    private val result: Boolean,
    private val error: String? = null
+diff --git a/node_modules/@api.video/react-native-livestream/ios/RNLiveStreamViewManager.swift b/node_modules/@api.video/react-native-livestream/ios/RNLiveStreamViewManager.swift
+index a4f7451..1352f2d 100644
+--- a/node_modules/@api.video/react-native-livestream/ios/RNLiveStreamViewManager.swift
++++ b/node_modules/@api.video/react-native-livestream/ios/RNLiveStreamViewManager.swift
+@@ -4,34 +4,70 @@ import Foundation
+ 
+ @objc(RNLiveStreamViewManager)
+ class RNLiveStreamViewManager: RCTViewManager {
++    // Track the live-stream views we create so commands can resolve them even when the
++    // legacy `viewRegistry` doesn't contain them. Under the New Architecture (bridgeless)
++    // this view is driven through RCTLegacyViewManagerInterop, where `viewRegistry[reactTag]`
++    // is either an interop wrapper (the impl nested inside) or absent — the original code
++    // force-unwrapped that lookup and crashed with EXC_BREAKPOINT at startStreaming.
++    // Weak objects so views drop out automatically when unmounted.
++    private static let liveViews = NSHashTable<RNLiveStreamViewImpl>.weakObjects()
++
+     override static func requiresMainQueueSetup() -> Bool {
+         return true
+     }
+ 
+     override func view() -> (RNLiveStreamViewImpl) {
+-        return RNLiveStreamViewImpl()
++        let view = RNLiveStreamViewImpl()
++        RNLiveStreamViewManager.liveViews.add(view)
++        return view
++    }
++
++    // Resolve the RNLiveStreamViewImpl for a command without force-unwrapping.
++    // 1) Old architecture: the registry entry for reactTag is the impl itself.
++    // 2) New architecture (interop): the registry entry is a wrapper; the impl is nested.
++    // 3) Bridgeless with an empty registry: fall back to the (single) live view we created.
++    private static func resolveView(_ reactTag: NSNumber, _ viewRegistry: [NSNumber: UIView]?) -> RNLiveStreamViewImpl? {
++        if let view = viewRegistry?[reactTag] as? RNLiveStreamViewImpl {
++            return view
++        }
++        if let container = viewRegistry?[reactTag], let nested = findLiveView(in: container) {
++            return nested
++        }
++        return liveViews.allObjects.first
++    }
++
++    private static func findLiveView(in view: UIView) -> RNLiveStreamViewImpl? {
++        for subview in view.subviews {
++            if let match = subview as? RNLiveStreamViewImpl {
++                return match
++            }
++            if let nested = findLiveView(in: subview) {
++                return nested
++            }
++        }
++        return nil
+     }
+ 
+     @objc(startStreaming:withRequestId:withStreamKey:withUrl:)
+     func startStreaming(_ reactTag: NSNumber, withRequestId requestId: NSNumber, streamKey: String, url: String?) {
+-        bridge!.uiManager.addUIBlock { (_: RCTUIManager?, viewRegistry: [NSNumber: UIView]?) in
+-            let view: RNLiveStreamViewImpl = (viewRegistry![reactTag] as? RNLiveStreamViewImpl)!
++        bridge?.uiManager.addUIBlock { (_: RCTUIManager?, viewRegistry: [NSNumber: UIView]?) in
++            guard let view = RNLiveStreamViewManager.resolveView(reactTag, viewRegistry) else { return }
+             view.startStreaming(requestId: Int(truncating: requestId), streamKey: streamKey, url: url)
+         }
+     }
+ 
+     @objc(stopStreaming:)
+     func stopStreaming(_ reactTag: NSNumber) {
+-        bridge!.uiManager.addUIBlock { (_: RCTUIManager?, viewRegistry: [NSNumber: UIView]?) in
+-            let view: RNLiveStreamViewImpl = (viewRegistry![reactTag] as? RNLiveStreamViewImpl)!
++        bridge?.uiManager.addUIBlock { (_: RCTUIManager?, viewRegistry: [NSNumber: UIView]?) in
++            guard let view = RNLiveStreamViewManager.resolveView(reactTag, viewRegistry) else { return }
+             view.stopStreaming()
+         }
+     }
+ 
+     @objc(setZoomRatioCommand:withZoomRatio:)
+     func setZoomRatioCommand(_ reactTag: NSNumber, zoomRatio: NSNumber) {
+-        bridge!.uiManager.addUIBlock { (_: RCTUIManager?, viewRegistry: [NSNumber: UIView]?) in
+-            let view: RNLiveStreamViewImpl = (viewRegistry![reactTag] as? RNLiveStreamViewImpl)!
++        bridge?.uiManager.addUIBlock { (_: RCTUIManager?, viewRegistry: [NSNumber: UIView]?) in
++            guard let view = RNLiveStreamViewManager.resolveView(reactTag, viewRegistry) else { return }
+             view.zoomRatio = zoomRatio.floatValue
+         }
+     }
