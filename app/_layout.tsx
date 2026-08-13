@@ -54,6 +54,9 @@ function AuthGate() {
         headerTintColor: colors.primary,
         headerTitleStyle: { fontFamily: fonts.bold, fontSize: 17, color: colors.ink },
         contentStyle: { backgroundColor: colors.bg },
+        // iOS otherwise labels the back button with the previous route name — here the
+        // "(tabs)" group, shown as "tabs". Chevron-only avoids that everywhere.
+        headerBackButtonDisplayMode: 'minimal',
       }}
     >
       <Stack.Screen name="(tabs)" />
