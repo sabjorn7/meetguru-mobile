@@ -18,7 +18,7 @@
       "buildNumber": "4"
     },
     "android": {
-      "package": "ru.meetgu.mobile",
+      "package": "ru.meetguru.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
