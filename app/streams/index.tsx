@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -19,6 +20,8 @@ import { errorMessage } from '@/lib/errors';
 import { colors, radius, spacing } from '@/theme';
 
 const priceFormatter = new Intl.NumberFormat('ru-RU');
+// iOS "Reader" mode: hide the paid price on stream cards ("Бесплатно" stays).
+const isIOS = Platform.OS === 'ios';
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
   day: 'numeric',
   month: 'long',
@@ -93,9 +96,11 @@ function StreamCard({ stream, onPress }: { stream: Stream; onPress: (s: Stream) 
             </AppText>
           </View>
         ) : null}
-        <AppText variant="label" style={{ color: free ? colors.success : colors.primary }}>
-          {free ? 'Бесплатно' : `${priceFormatter.format(Number(stream.price))} ₽`}
-        </AppText>
+        {free || !isIOS ? (
+          <AppText variant="label" style={{ color: free ? colors.success : colors.primary }}>
+            {free ? 'Бесплатно' : `${priceFormatter.format(Number(stream.price))} ₽`}
+          </AppText>
+        ) : null}
       </View>
     </Pressable>
   );

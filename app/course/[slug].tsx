@@ -5,6 +5,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -36,6 +37,9 @@ import { colors, radius, spacing } from '@/theme';
 
 const WEB_ORIGIN = 'https://app.meetgu.ru';
 const priceFormatter = new Intl.NumberFormat('ru-RU');
+// iOS "Reader" mode (App Store Guideline 3.1.1 / 3.1.3(a)): hide every in-app purchase entry point
+// (price + buy CTA). Owned/free content stays fully viewable. Android & web are unaffected.
+const isIOS = Platform.OS === 'ios';
 
 function formatPrice(value: number | null): string {
   return `${priceFormatter.format(value ?? 0)} ₽`;
@@ -180,7 +184,7 @@ export default function CourseDetailScreen() {
               Бесплатно
             </AppText>
           </View>
-        ) : (
+        ) : isIOS ? null : (
           <View style={styles.priceRow}>
             <AppText variant="title" style={{ color: colors.primary }}>
               {formatPrice(course.Price)}
@@ -231,7 +235,7 @@ export default function CourseDetailScreen() {
             В библиотеке
           </AppText>
         </View>
-      ) : !isFree ? (
+      ) : !isFree && !isIOS ? (
         <PillButton label={`Купить за ${formatPrice(course.Price)}`} onPress={handleBuy} />
       ) : null}
 

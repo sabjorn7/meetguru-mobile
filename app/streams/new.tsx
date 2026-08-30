@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText, Card, PillButton, SegmentedTabs, TextField } from '@/components/ui';
@@ -57,6 +57,9 @@ export default function NewStreamScreen() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  // iOS "Reader" mode: hide all pricing UI here (paid/free selector, price, access months).
+  // `paid` stays 'free', so a stream created on iOS is always free — no money is referenced anywhere.
+  const isIOS = Platform.OS === 'ios';
   const [paid, setPaid] = useState<'free' | 'paid'>('free');
   const [price, setPrice] = useState('');
   const [months, setMonths] = useState('3');
@@ -244,35 +247,39 @@ export default function NewStreamScreen() {
         keyboardType="numbers-and-punctuation"
       />
 
-      <View style={styles.field}>
-        <AppText variant="label" style={{ color: colors.muted }}>
-          Доступ
-        </AppText>
-        <SegmentedTabs
-          options={[
-            { value: 'free', label: 'Бесплатно' },
-            { value: 'paid', label: 'Платно' },
-          ]}
-          value={paid}
-          onChange={(v) => setPaid(v as 'free' | 'paid')}
-        />
-      </View>
-
-      {paid === 'paid' ? (
+      {!isIOS ? (
         <>
-          <TextField
-            label="Цена, ₽"
-            value={price}
-            onChangeText={setPrice}
-            placeholder="0"
-            keyboardType="number-pad"
-          />
           <View style={styles.field}>
             <AppText variant="label" style={{ color: colors.muted }}>
-              Доступ к записи
+              Доступ
             </AppText>
-            <SegmentedTabs options={DURATIONS} value={months} onChange={setMonths} />
+            <SegmentedTabs
+              options={[
+                { value: 'free', label: 'Бесплатно' },
+                { value: 'paid', label: 'Платно' },
+              ]}
+              value={paid}
+              onChange={(v) => setPaid(v as 'free' | 'paid')}
+            />
           </View>
+
+          {paid === 'paid' ? (
+            <>
+              <TextField
+                label="Цена, ₽"
+                value={price}
+                onChangeText={setPrice}
+                placeholder="0"
+                keyboardType="number-pad"
+              />
+              <View style={styles.field}>
+                <AppText variant="label" style={{ color: colors.muted }}>
+                  Доступ к записи
+                </AppText>
+                <SegmentedTabs options={DURATIONS} value={months} onChange={setMonths} />
+              </View>
+            </>
+          ) : null}
         </>
       ) : null}
 

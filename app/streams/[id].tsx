@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText, Card, PillButton } from '@/components/ui';
@@ -32,6 +32,8 @@ import { colors, radius, spacing } from '@/theme';
 
 const WEB_ORIGIN = 'https://app.meetgu.ru';
 const priceFormatter = new Intl.NumberFormat('ru-RU');
+// iOS "Reader" mode: hide the paid price + buy CTA (owned/free streams stay viewable).
+const isIOS = Platform.OS === 'ios';
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
   day: 'numeric',
   month: 'long',
@@ -286,9 +288,11 @@ export default function StreamDetailScreen() {
       ) : null}
 
       <View style={styles.metaRow}>
-        <AppText variant="title" style={{ color: free ? colors.success : colors.primary }}>
-          {free ? 'Бесплатно' : `${priceFormatter.format(Number(stream.price))} ₽`}
-        </AppText>
+        {free || !isIOS ? (
+          <AppText variant="title" style={{ color: free ? colors.success : colors.primary }}>
+            {free ? 'Бесплатно' : `${priceFormatter.format(Number(stream.price))} ₽`}
+          </AppText>
+        ) : null}
         {when ? (
           <View style={styles.inlineMeta}>
             <Ionicons name="time-outline" size={15} color={colors.muted} />
@@ -305,7 +309,7 @@ export default function StreamDetailScreen() {
               Доступ к записи завершён
             </AppText>
           </Card>
-        ) : (
+        ) : isIOS ? null : (
           <PillButton label={`Купить за ${priceFormatter.format(Number(stream.price))} ₽`} onPress={handleBuy} />
         )
       ) : null}

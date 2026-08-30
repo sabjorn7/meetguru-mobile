@@ -124,6 +124,8 @@ export default function ClubScreen() {
 
   const isExpired = sub != null && !access;
   const openSite = () => WebBrowser.openBrowserAsync(clubSiteUrl(club.id));
+  // iOS "Reader" mode: hide the subscribe/renew CTA and the external-payment steering line.
+  const isIOS = Platform.OS === 'ios';
   const screen = <Stack.Screen options={{ title: club.title ?? 'Клуб' }} />;
 
   // Paywall — non-subscribers see the full pitch (cover + long description) + site CTA.
@@ -148,13 +150,17 @@ export default function ClubScreen() {
           <AppText variant="title" style={{ textAlign: 'center', marginTop: spacing.sm }}>
             {isExpired ? 'Подписка истекла' : 'Доступ только для подписчиков'}
           </AppText>
-          <PillButton
-            label={isExpired ? 'Продлить подписку' : 'Оформить подписку'}
-            onPress={openSite}
-          />
-          <AppText variant="label" style={{ color: colors.faint, textAlign: 'center' }}>
-            Оплата и управление подпиской — на сайте meetgu.ru
-          </AppText>
+          {!isIOS ? (
+            <>
+              <PillButton
+                label={isExpired ? 'Продлить подписку' : 'Оформить подписку'}
+                onPress={openSite}
+              />
+              <AppText variant="label" style={{ color: colors.faint, textAlign: 'center' }}>
+                Оплата и управление подпиской — на сайте meetgu.ru
+              </AppText>
+            </>
+          ) : null}
         </Card>
       </ScrollView>
     );

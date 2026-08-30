@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText, Card } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
@@ -16,6 +16,8 @@ type Props = {
 };
 
 const priceFormatter = new Intl.NumberFormat('ru-RU');
+// iOS "Reader" mode: hide the paid price on catalog cards ("Бесплатно" stays).
+const isIOS = Platform.OS === 'ios';
 
 function formatPrice(value: number | null): string {
   return `${priceFormatter.format(value ?? 0)} ₽`;
@@ -68,7 +70,7 @@ export function CourseCard({ course, onPress, accessUntil }: Props) {
                   Бесплатно
                 </AppText>
               </View>
-            ) : (
+            ) : isIOS ? null : (
               <View style={styles.priceRow}>
                 <AppText variant="subtitle" style={styles.price}>
                   {formatPrice(course.Price)}
