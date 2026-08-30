@@ -27,6 +27,12 @@
       "android": {
         "buildType": "app-bundle"
       }
+    },
+    "production-rustore": {
+      "extends": "production",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {

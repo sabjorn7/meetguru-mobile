@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "692602547644",
+    "project_id": "meet-guru-a9c7a",
+    "storage_bucket": "meet-guru-a9c7a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:692602547644:android:e378d5187ea665d3e9cfb9",
+        "android_client_info": {
+          "package_name": "ru.meetguru.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAluu988Eq3cwzNiOixDHsVJVd03e-oTP4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
